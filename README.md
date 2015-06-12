@@ -175,7 +175,52 @@ modparam("nsq", "max_in_flight", 5)
 ...
 ```
 
+#### 4.1.7. query_timeout(int)
+
+Number of seconds until timeout for query requests
+
+_Default value is 2_
+
+__Example__
+```
+...
+modparam("nsq", "query_timeout", 5)
+...
+```
+
+### 4.2. Presence Related
+
+#### 4.2.1. db_url(str)
+
+The database for the presentity table.
+
+If set, the nsq_ppua_publish function will update the presentity status in the database.
+
+_Default value is “NULL”._
+
+__Example__
+```
+...
+modparam("nsq", "db_url", "mysql://kamailio:kamailiorw@localhost/kamailio")
+...
+```
+
+#### 4.2.2. presentity_table(str)
+
+The name of the presentity table in the database.
+
+_Default value is “presentity”._
+
+__Example__
+```
+...
+modparam("nsq", "presentity_table", "my_presentity_table")
+...
+```
+
+
 ## 5. Functions
+
 
 ## 6. Exported pseudo-variables
 
