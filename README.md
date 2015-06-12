@@ -40,7 +40,7 @@ modparam("nsq", "consumer_event_subkey", "Event-Name")
 
 event_route[nsq:consumer-event-presence-update]
 {
-# presence is the value extracted from Event-Category field in json payload 
+# presence is the value extracted from Event-Type field in json payload 
 # update is the value extracted from Event-Name field in json payload 
 xlog("L_INFO", "received $(kzE{kz.json,Event-Package}) update for $(kzE{kz.json,From})");
 ...
@@ -48,7 +48,7 @@ xlog("L_INFO", "received $(kzE{kz.json,Event-Package}) update for $(kzE{kz.json,
 
 event_route[nsq:consumer-event-presence]
 {
-# presence is the value extracted from Event-Category field in json payload 
+# presence is the value extracted from Event-Type field in json payload 
 xlog("L_INFO", "received $(kzE{kz.json,Event-Package}) update for $(kzE{kz.json,From})");
 ...
 }
@@ -90,7 +90,7 @@ The following modules must be loaded before this module:
 
 The http address of the nsqd to post messages to
 
-Default value is Null. You must set this parameter value for the module to work
+_Default value is Null. You must set this parameter value for the module to work_
 
 __Example__
 ```
@@ -103,7 +103,7 @@ modparam("nsq", "nsqd_address", "127.0.0.1:4151")
 
 The http address of the nsq lookupd servers ( _comma seperated_ )
 
-Default value is Null. You must set this parameter value for the module to work
+_Default value is Null. You must set this parameter value for the module to work_
 
 __Example__
 ```
@@ -112,38 +112,66 @@ modparam("nsq", "lookupd_address", "10.10.10.1:4161,10.10.10.2:4161")
 ...
 ```
 
-#### 4.1.3. max_in_flight(int)
-
-Number of messages the nsq client will handle concurrently
-
-Default value is 5.
-
-__Example__
-```
-...
-modparam("nsq", "max_in_flight", 5)
-...
-```
-
-#### 4.1.4. listen_topic(str)
+#### 4.1.3. consumer_topic(str)
 
 The topic to listen on for inbound events
 
 __Example__
 ```
 ...
-modparam("nsq", "listen_topic", "kamailio")
+modparam("nsq", "consumer_topic", "kamailio")
 ...
 ```
 
-#### 4.1.5. listen_channel(str)
+#### 4.1.4. consumer_channel(str)
 
 The channel to listen on for inbound events
 
 __Example__
 ```
 ...
-modparam("nsq", "listen_channel", "sip-proxy-01")
+modparam("nsq", "consumer_channel", "sip-proxy-01")
+...
+```
+
+#### 4.1.5. consumer_event_key(str)
+
+The JSON property name to watch for for handling event_routes
+
+_Default value is "Event-Type"_
+
+__Example__
+```
+...
+modparam("nsq", "consumer_event_key", "Type")
+...
+```
+
+
+#### 4.1.6. consumer_event_subkey(str)
+
+The JSON property sub key name to watch for for handling event_routes
+
+_Default value is "Event-Name"_
+
+__Example__
+```
+...
+modparam("nsq", "consumer_event_subkey", "Name")
+...
+```
+
+
+#### 4.1.7. max_in_flight(int)
+
+Number of messages the nsq client will handle concurrently
+
+_Default value is 100_
+
+__Example__
+```
+...
+modparam("nsq", "max_in_flight", 5)
 ...
 ```
 
