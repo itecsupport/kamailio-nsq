@@ -60,7 +60,7 @@ event_route[nsq:consumer-event]
 
 ```
 
-### 2.2 Aknowledge Messages
+### 2.2 Acknowledge Messages
 
 Consumed messages have the option of being acknowledged in two ways:
 
@@ -84,7 +84,61 @@ The following modules must be loaded before this module:
 
 ## 4. Parameters
 
-### 4.1.
+### 4.1. NSQ Client
+
+#### 4.1.1. nsqd_address(str)
+
+The http address of the nsqd to post messages to
+
+Default value is Null. You must set this parameter value for the module to work
+
+__Example__
+```
+...
+modparam("nsq", "nsqd_address", "127.0.0.1:4151")
+...
+```
+
+#### 4.1.2. lookupd_address(str)
+
+The http address of the nsq lookupd servers ( _comma seperated_ )
+
+Default value is Null. You must set this parameter value for the module to work
+
+__Example__
+```
+...
+modparam("nsq", "lookupd_address", "10.10.10.1:4161,10.10.10.2:4161")
+...
+```
+
+#### 4.1.3. max_in_flight(int)
+
+Number of messages the nsq client will handle concurrently
+
+Default value is 5.
+
+__Example__
+```
+...
+modparam("nsq", "max_in_flight", 5)
+...
+```
+
+#### 4.1.4. listen_topic(str)
+
+The topic to listen on for inbound events
+
+__Example__
+```
+...
+modparam("nsq", "lookupd", "10.10.10.1:4161,10.10.10.2:4161")
+...
+```
+
+#### 4.1.4. listen_channel(str)
+
+The channel to listen on for inbound events
 
 ## 5. Functions
 
