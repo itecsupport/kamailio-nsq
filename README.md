@@ -132,13 +132,20 @@ The topic to listen on for inbound events
 __Example__
 ```
 ...
-modparam("nsq", "lookupd", "10.10.10.1:4161,10.10.10.2:4161")
+modparam("nsq", "listen_topic", "kamailio")
 ...
 ```
 
-#### 4.1.4. listen_channel(str)
+#### 4.1.5. listen_channel(str)
 
 The channel to listen on for inbound events
+
+__Example__
+```
+...
+modparam("nsq", "listen_channel", "sip-proxy-01")
+...
+```
 
 ## 5. Functions
 
