@@ -221,6 +221,21 @@ modparam("nsq", "presentity_table", "my_presentity_table")
 
 ## 5. Functions
 
+### 5.1. nsq related
+
+#### 5.1.1. nsq_publish(topic, json_payload)
+
+The function publishes a json payload to the nsq topic passed in.
+
+This function can be used from ANY ROUTE.
+
+__Example__
+```
+...
+$var(nsq_payload_request) = "{'Event-Category' : 'directory', 'Event-Name' : 'reg_success', 'Contact' : '" + $var(fs_contact) + "', 'Call-ID' : '" + $ci + "', 'Realm' : '" + $fd +"', 'Username' : '" + $fU + "', 'From-User' : '" + $fU + "', 'From-Host' : '" + $fd + "', 'To-User' : '" + $tU +"', 'To-Host' : '" + $td + "', 'User-Agent' : '" + $ua +"' ," + $var(register_contants)+ " }";
+nsq_publish("registrations", $var(nsq_payload_request));
+...
+```
 
 ## 6. Exported pseudo-variables
 
