@@ -232,10 +232,75 @@ This function can be used from ANY ROUTE.
 __Example__
 ```
 ...
-$var(nsq_payload_request) = "{'Event-Category' : 'directory', 'Event-Name' : 'reg_success', 'Contact' : '" + $var(fs_contact) + "', 'Call-ID' : '" + $ci + "', 'Realm' : '" + $fd +"', 'Username' : '" + $fU + "', 'From-User' : '" + $fU + "', 'From-Host' : '" + $fd + "', 'To-User' : '" + $tU +"', 'To-Host' : '" + $td + "', 'User-Agent' : '" + $ua +"' ," + $var(register_contants)+ " }";
+$var(nsq_payload_request) = "{'Event-Type' : 'directory', 'Event-Name' : 'reg_success', 'Contact' : '" + $var(fs_contact) + "', 'Call-ID' : '" + $ci + "', 'Realm' : '" + $fd +"', 'Username' : '" + $fU + "', 'From-User' : '" + $fU + "', 'From-Host' : '" + $fd + "', 'To-User' : '" + $tU +"', 'To-Host' : '" + $td + "', 'User-Agent' : '" + $ua +"' ," + $var(register_contants)+ " }";
 nsq_publish("registrations", $var(nsq_payload_request));
 ...
 ```
+
+#### 5.1.2. nsq_query(topic, json_payload [, target_var])
+
+The function publishes a json payload to nsq, waits for a correlated message and puts the result in target_var. target_var is optional as the function also puts the result in pseudo-variable $nqR.
+
+This function can be used from ANY ROUTE.
+
+__Example__
+```
+...
+$var(nsq_payload_request) = "{'Event-Category' : 'call_event' , 'Event-Name' : 'query_user_channels_req', 'Realm' : '" + $fd + "', 'Username' : '" + $fU + "', 'Active-Only' : false }";
+nsq_encode("$ci", "$var(callid_encoded)");
+if(nsq_query("callevt", $var(nsq_payload_request), "$var(nsq_result)")) {
+   nsq_json("$var(nsq_result)", "Channels[0].switch_url", "$du");
+   if($du != $null) {
+       xlog("L_INFO", "$ci|log|user channels found redirecting call to $du");
+       return;
+   }
+}
+...
+```
+
+### 5.2. presence related
+
+#### 5.2.1. nsq_pua_publish(json_payload)
+
+The function build presentity state from json_payload and updates presentity table.
+
+This function can be used from ANY ROUTE.
+
+__Example__
+```
+...
+event_route[nsq:consumer-event-presence-update]
+{
+    xlog("L_INFO", "received $(nqE{nq.json,Event-Package}) update for $(nqE{nq.json,From})");
+    nsq_pua_publish($kzE);
+    pres_refresh_watchers("$(nqE{nq.json,From})", "$(nqE{nq.json,Event-Package})", 1);
+}  
+...
+```
+
+### 5.3. other
+
+### 5.3. presence related
+
+#### 5.3.1. nsq_encode(to_encode, target_var)
+
+The function encodes the 1st parameter to JSON and puts the result in the 2nd parameter.
+
+This function can be used from ANY ROUTE.
+
+__Example__
+```
+...
+event_route[nsq:consumer-event-presence-update]
+{
+    xlog("L_INFO", "received $(nqE{nq.json,Event-Package}) update for $(nqE{nq.json,From})");
+    nsq_pua_publish($nqE);
+    pres_refresh_watchers("$(nqE{nq.json,From})", "$(nqE{nq.json,Event-Package})", 1);
+}  
+...
+```
+
+
 
 ## 6. Exported pseudo-variables
 
