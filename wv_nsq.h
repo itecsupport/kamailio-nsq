@@ -1,5 +1,3 @@
-
-
 #ifndef _NSQ_H
 #define _NSQ_H
 
