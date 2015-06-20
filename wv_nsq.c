@@ -4,6 +4,8 @@
 #include "utlist.h"
 #include "wv_nsq.h"
 
+str lookupd_address = {0,0};
+
 MODULE_VERSION
 
 void message_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
@@ -74,7 +76,7 @@ static int nsq_query(struct sip_msg* msg)
     char buf[256];
 
     loop = ev_default_loop(0);
-    sprintf(buf, "http://%s:%d/lookup?topic=%s", "127.0.0.1", 4161, "test");
+    sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, "test");
 	http_client = new_http_client(loop);
     req = new_http_request(buf, message_handler, buf);
     http_client_get(http_client, req);
@@ -94,6 +96,7 @@ static cmd_export_t cmds[]=
 static int mod_init(void)
 {
 	LM_ERR("nsq loaded\n");
+	LM_ERR("lookupd_address %s\n", lookupd_address.s);
 	return 0;
 }
 
@@ -104,7 +107,8 @@ static void destroy(void)
 
 static param_export_t params[]=
 {
-	{ 0, 0, 0 }
+		{"lookupd_address", STR_PARAM, &lookupd_address.s},
+		{ 0, 0, 0 }
 };
 
 struct module_exports exports = {
