@@ -5,6 +5,7 @@
 #include "wv_nsq.h"
 
 str lookupd_address = {0,0};
+str consumer_topic = {0,0};
 
 MODULE_VERSION
 
@@ -76,7 +77,7 @@ static int nsq_query(struct sip_msg* msg)
     char buf[256];
 
     loop = ev_default_loop(0);
-    sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, "test");
+    sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, consumer_topic.s);
 	http_client = new_http_client(loop);
     req = new_http_request(buf, message_handler, buf);
     http_client_get(http_client, req);
@@ -97,6 +98,7 @@ static int mod_init(void)
 {
 	LM_ERR("nsq loaded\n");
 	LM_ERR("lookupd_address %s\n", lookupd_address.s);
+	LM_ERR("consumer_topic %s\n", consumer_topic.s);
 	return 0;
 }
 
@@ -108,6 +110,7 @@ static void destroy(void)
 static param_export_t params[]=
 {
 		{"lookupd_address", STR_PARAM, &lookupd_address.s},
+		{"consumer_topic", STR_PARAM, &consumer_topic.s},
 		{ 0, 0, 0 }
 };
 
