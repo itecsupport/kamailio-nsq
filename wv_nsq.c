@@ -3,9 +3,12 @@
 #include "http.h"
 #include "utlist.h"
 #include "wv_nsq.h"
+#include "../../mod_fix.h"
+#include "../../lvalue.h"
 
 str lookupd_address = {0,0};
 str consumer_topic = {0,0};
+
 
 MODULE_VERSION
 
@@ -68,20 +71,83 @@ void message_handler(struct HttpRequest *req, struct HttpResponse *resp, void *a
 	free_http_request(req);
 }
 
-static int nsq_query(struct sip_msg* msg)
+int fixup_wv_nsq(void** param, int param_no)
 {
-	LM_ERR("Hello from NSQ module\n");
+	if (param_no == 1 || param_no == 2) {
+		return fixup_spve_null(param, 1);
+	}
+
+	if (param_no == 3) {
+		if (fixup_pvar_null(param, 1) != 0) {
+			LM_ERR("failed to fixup result pvar\n");
+			return -1;
+		}
+		if (((pv_spec_t *)(*param))->setf == NULL) {
+			LM_ERR("result pvar is not writeble\n");
+			return -1;
+		}
+		return 0;
+	}
+
+	LM_ERR("invalid parameter number <%d>\n", param_no);
+	return -1;
+}
+
+int fixup_wv_nsq_free(void** param, int param_no)
+{
+	if (param_no == 1 || param_no == 2 || param_no == 3) {
+		return fixup_free_spve_null(param, 1);
+	}
+
+	if (param_no == 4) {
+		return fixup_free_pvar_null(param, 1);
+	}
+
+	LM_ERR("invalid parameter number <%d>\n", param_no);
+	return -1;
+}
+
+static int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
+{
     struct HttpRequest *req;
 	struct HttpClient * http_client;
     struct ev_loop *loop;
     char buf[256];
+	str topic_s;
+	str payload_s;
+	pv_spec_t *dst_pv;
+	pv_value_t dst_val;
+	char* last_payload_result = NULL;
+
+
+	if (fixup_get_svalue(msg, (gparam_p)topic, &topic_s) != 0) {
+		LM_ERR("cannot get topic string value\n");
+		return -1;
+	}
+	if (fixup_get_svalue(msg, (gparam_p)payload, &payload_s) != 0) {
+		LM_ERR("cannot get payload string value\n");
+		return -1;
+	}
 
     loop = ev_default_loop(0);
-    sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, consumer_topic.s);
+    sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
+
     req = new_http_request(buf, message_handler, buf);
     http_client_get(http_client, req);
 	nsq_run(loop);
+
+	int len = strlen("200");
+	last_payload_result = pkg_malloc(len+1);
+	memcpy(last_payload_result, "200", len);
+	last_payload_result[len] = '\0';
+	LM_ERR("last_payload_result %s\n", last_payload_result);
+
+	dst_pv = (pv_spec_t *)dst;
+	dst_val.rs.s = last_payload_result;
+	dst_val.rs.len = strlen(last_payload_result);
+	dst_val.flags = PV_VAL_STR;
+	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
 
 	return 0;
 }
@@ -89,9 +155,7 @@ static int nsq_query(struct sip_msg* msg)
 static cmd_export_t cmds[]=
 {
 	/* nsq.c */
-	{ "nsq_query", (cmd_function) nsq_query,
-	  0, 0, 0,
-	  ANY_ROUTE }
+	{ "nsq_query", (cmd_function) nsq_query, 3, fixup_wv_nsq, fixup_wv_nsq_free, ANY_ROUTE}
 };
 
 static int mod_init(void)
