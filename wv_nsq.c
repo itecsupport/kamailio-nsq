@@ -12,7 +12,7 @@ str consumer_topic = {0,0};
 
 MODULE_VERSION
 
-void message_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
+void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
 {
 	struct json_object *jsobj, *data, *producers, *producer, *broadcast_address_obj, *tcp_port_obj;
 	struct json_tokener *jstok;
@@ -69,6 +69,14 @@ void message_handler(struct HttpRequest *req, struct HttpResponse *resp, void *a
 
 	free_http_response(resp);
 	free_http_request(req);
+}
+
+
+void publish_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
+{
+	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
+			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
+	return;
 }
 
 int fixup_wv_nsq(void** param, int param_no)
@@ -133,7 +141,7 @@ static int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
     sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
 
-    req = new_http_request(buf, message_handler, buf);
+    req = new_http_request(buf, query_handler, buf, NULL);
     http_client_get(http_client, req);
 	nsq_run(loop);
 
@@ -152,10 +160,45 @@ static int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 	return 0;
 }
 
+static int nsq_publish(struct sip_msg* msg, char* topic, char* payload){
+
+    struct HttpRequest *req;
+	struct HttpClient * http_client;
+    struct ev_loop *loop;
+    char buf[256];
+	str topic_s;
+	str payload_s;
+
+	if (fixup_get_svalue(msg, (gparam_p)topic, &topic_s) != 0) {
+		LM_ERR("cannot get topic string value\n");
+		return -1;
+	}
+	if (fixup_get_svalue(msg, (gparam_p)payload, &payload_s) != 0) {
+		LM_ERR("cannot get payload string value\n");
+		return -1;
+	}
+
+    loop = ev_default_loop(0);
+    sprintf(buf, "http://%s/put?topic=%s", "127.0.0.1:4151", topic_s.s);
+	http_client = new_http_client(loop);
+
+	int len = strlen("data");
+	char *data;
+	data = pkg_malloc(len+1);
+	memcpy(data, "data", len);
+    req = new_http_request(buf, publish_handler, buf, data);
+    http_client_get(http_client, req);
+	nsq_run(loop);
+
+	return 0;
+}
+
 static cmd_export_t cmds[]=
 {
-	/* nsq.c */
-	{ "nsq_query", (cmd_function) nsq_query, 3, fixup_wv_nsq, fixup_wv_nsq_free, ANY_ROUTE}
+	/* wv_nsq.c */
+	{ "nsq_query", (cmd_function) nsq_query, 3, fixup_wv_nsq, fixup_wv_nsq_free, ANY_ROUTE},
+	{ "nsq_publish", (cmd_function) nsq_publish, 2, fixup_wv_nsq, fixup_wv_nsq_free, ANY_ROUTE},
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 static int mod_init(void)
