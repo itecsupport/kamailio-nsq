@@ -8,6 +8,7 @@
 
 str lookupd_address = {0,0};
 str consumer_topic = {0,0};
+str nsqd_address = {0,0};
 
 
 MODULE_VERSION
@@ -179,7 +180,7 @@ static int nsq_publish(struct sip_msg* msg, char* topic, char* payload){
 	}
 
     loop = ev_default_loop(0);
-    sprintf(buf, "http://%s/put?topic=%s", "127.0.0.1:4151", topic_s.s);
+    sprintf(buf, "http://%s/put?topic=%s", nsqd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
 
 	int len = strlen("data");
@@ -206,6 +207,7 @@ static int mod_init(void)
 	LM_ERR("nsq loaded\n");
 	LM_ERR("lookupd_address %s\n", lookupd_address.s);
 	LM_ERR("consumer_topic %s\n", consumer_topic.s);
+	LM_ERR("nsqd_address %s\n", nsqd_address.s);
 	return 0;
 }
 
@@ -218,6 +220,7 @@ static param_export_t params[]=
 {
 		{"lookupd_address", STR_PARAM, &lookupd_address.s},
 		{"consumer_topic", STR_PARAM, &consumer_topic.s},
+		{"nsqd_address", STR_PARAM, &nsqd_address.s},
 		{ 0, 0, 0 }
 };
 
