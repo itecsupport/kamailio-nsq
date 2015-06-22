@@ -1,17 +1,42 @@
+/**
+ * $Id$
+ *
+ * Copyright (C) 2011 Flowroute LLC (flowroute.com)
+ *
+ * This file is part of Kamailio, a free SIP server.
+ *
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#include <stdio.h>
+#include <string.h>
 #include <json-c/json.h>
 #include "nsq.h"
 #include "http.h"
 #include "utlist.h"
-#include "wv_nsq.h"
+
 #include "../../mod_fix.h"
 #include "../../lvalue.h"
 
-str lookupd_address = {0,0};
-str consumer_topic = {0,0};
-str nsqd_address = {0,0};
+#include "nsq_funcs.h"
 
-
-MODULE_VERSION
+extern str lookupd_address;
+extern str consumer_topic;
+extern str nsqd_address;
 
 void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
 {
@@ -72,53 +97,9 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 	free_http_request(req);
 }
 
-
-void publish_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
+int nsq_query(struct sip_msg* msg, char* json, char* field, char* dst)
 {
-	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
-			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
-	return;
-}
-
-int fixup_wv_nsq(void** param, int param_no)
-{
-	if (param_no == 1 || param_no == 2) {
-		return fixup_spve_null(param, 1);
-	}
-
-	if (param_no == 3) {
-		if (fixup_pvar_null(param, 1) != 0) {
-			LM_ERR("failed to fixup result pvar\n");
-			return -1;
-		}
-		if (((pv_spec_t *)(*param))->setf == NULL) {
-			LM_ERR("result pvar is not writeble\n");
-			return -1;
-		}
-		return 0;
-	}
-
-	LM_ERR("invalid parameter number <%d>\n", param_no);
-	return -1;
-}
-
-int fixup_wv_nsq_free(void** param, int param_no)
-{
-	if (param_no == 1 || param_no == 2 || param_no == 3) {
-		return fixup_free_spve_null(param, 1);
-	}
-
-	if (param_no == 4) {
-		return fixup_free_pvar_null(param, 1);
-	}
-
-	LM_ERR("invalid parameter number <%d>\n", param_no);
-	return -1;
-}
-
-static int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
-{
-    struct HttpRequest *req;
+    /*struct HttpRequest *req;
 	struct HttpClient * http_client;
     struct ev_loop *loop;
     char buf[256];
@@ -156,13 +137,20 @@ static int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 	dst_val.rs.s = last_payload_result;
 	dst_val.rs.len = strlen(last_payload_result);
 	dst_val.flags = PV_VAL_STR;
-	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
+	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);*/
 
-	return 0;
+	return 1;
 }
 
-static int nsq_publish(struct sip_msg* msg, char* topic, char* payload){
+void publish_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
+{
+	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
+			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
+	return;
+}
 
+int nsq_publish(struct sip_msg* msg, char* topic, char* payload)
+{
     struct HttpRequest *req;
 	struct HttpClient * http_client;
     struct ev_loop *loop;
@@ -183,61 +171,14 @@ static int nsq_publish(struct sip_msg* msg, char* topic, char* payload){
     sprintf(buf, "http://%s/put?topic=%s", nsqd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
 
-	int len = strlen("data");
+	LM_ERR("%s:%d, payload %s\n", __FUNCTION__, __LINE__, payload_s.s);
+	/*len = strlen(payload_s.s);
 	char *data;
 	data = pkg_malloc(len+1);
-	memcpy(data, "data", len);
-    req = new_http_request(buf, publish_handler, buf, data);
+	memcpy(data, "data", len);*/
+    req = new_http_request(buf, publish_handler, buf, payload_s.s);
     http_client_get(http_client, req);
 	nsq_run(loop);
 
-	return 0;
+	return 1;
 }
-
-static cmd_export_t cmds[]=
-{
-	/* wv_nsq.c */
-	{ "nsq_query", (cmd_function) nsq_query, 3, fixup_wv_nsq, fixup_wv_nsq_free, ANY_ROUTE},
-	{ "nsq_publish", (cmd_function) nsq_publish, 2, fixup_wv_nsq, fixup_wv_nsq_free, ANY_ROUTE},
-	{ 0, 0, 0, 0, 0, 0}
-};
-
-static int mod_init(void)
-{
-	LM_ERR("nsq loaded\n");
-	LM_ERR("lookupd_address %s\n", lookupd_address.s);
-	LM_ERR("consumer_topic %s\n", consumer_topic.s);
-	LM_ERR("nsqd_address %s\n", nsqd_address.s);
-	return 0;
-}
-
-static void destroy(void)
-{
-	LM_ERR("nsq destroyed\n");
-}
-
-static param_export_t params[]=
-{
-		{"lookupd_address", STR_PARAM, &lookupd_address.s},
-		{"consumer_topic", STR_PARAM, &consumer_topic.s},
-		{"nsqd_address", STR_PARAM, &nsqd_address.s},
-		{ 0, 0, 0 }
-};
-
-struct module_exports exports = {
-	"nsq",
-	DEFAULT_DLFLAGS, 	/* dlopen flags */
-	cmds,       		/* Exported functions */
-	params,     		/* Exported parameters */
-	0,          		/* exported statistics */
-	0,          		/* exported MI functions */
-	0,         			/* exported pseudo-variables */
-	0,          		/* extra processes */
-	mod_init,   		/* module initialization function */
-	0,          		/* response function */
-	destroy,          	/* destroy function */
-	0           		/* child initialization function */
-};
-
-
-
