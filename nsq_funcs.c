@@ -36,6 +36,7 @@
 
 extern str lookupd_address;
 extern str consumer_topic;
+extern str consumer_channel;
 extern str nsqd_address;
 
 void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
@@ -208,11 +209,14 @@ void nsq_consumer_proc(int child_no)
     struct NSQReader *rdr;
     struct ev_loop *loop;
     void *ctx = NULL;
+    char ip[20];
+    int port;
 
     loop = ev_default_loop(0);
-    rdr = new_nsq_reader(loop, "test", "ch", (void *)ctx,
+    rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s, (void *)ctx,
         NULL, NULL, consumer_handler);
-    nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+	sscanf(lookupd_address.s, "%99[^:]:%99d", ip, &port);
+    nsq_reader_add_nsqlookupd_endpoint(rdr, ip, port);
     nsq_run(loop);
 
 	return;

@@ -38,6 +38,7 @@ static int fixup_get_field_free(void** param, int param_no);
 
 str lookupd_address = {0,0};
 str consumer_topic = {0,0};
+str consumer_channel = {0,0};
 str nsqd_address = {0,0};
 
 
@@ -82,6 +83,7 @@ static param_export_t params[]=
 {
 		{"lookupd_address", STR_PARAM, &lookupd_address.s},
 		{"consumer_topic", STR_PARAM, &consumer_topic.s},
+		{"consumer_channel", STR_PARAM, &consumer_channel.s},
 		{"nsqd_address", STR_PARAM, &nsqd_address.s},
 		{ 0, 0, 0 }
 };
