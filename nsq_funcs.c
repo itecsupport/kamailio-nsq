@@ -39,18 +39,23 @@ extern str consumer_topic;
 extern str consumer_channel;
 extern str nsqd_address;
 
+struct nsq_cb_data {
+	struct sip_msg* msg;
+	struct ev_loop *loop;
+	char *dst;
+};
+
 void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
 {
 	struct json_object *jsobj, *data, *producers, *producer, *broadcast_address_obj, *tcp_port_obj;
 	struct json_tokener *jstok;
 	const char *broadcast_address;
 	int i, tcp_port;
+	pv_spec_t *dst_pv;
+	pv_value_t dst_val;
+	struct nsq_cb_data *nsq_cb_data = (struct nsq_cb_data *)arg;
 
-	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
-			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
-
-	struct ev_loop *loop = (struct ev_loop *)arg;
-	ev_unloop(loop, EVUNLOOP_ALL);
+	ev_unloop(nsq_cb_data->loop, EVUNLOOP_ALL);
 
 	if (resp->status_code != 200) {
 		free_http_response(resp);
@@ -73,6 +78,7 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 		json_tokener_free(jstok);
 		return;
 	}
+
 	producers = json_object_object_get(data, "producers");
 	if (!producers) {
 		LM_ERR("%s: error getting 'producers' key\n", __FUNCTION__);
@@ -81,18 +87,21 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 		return;
 	}
 
-	LM_ERR("%s: num producers %d\n", __FUNCTION__, json_object_array_length(producers));
 	for (i = 0; i < json_object_array_length(producers); i++) {
 		producer = json_object_array_get_idx(producers, i);
 		broadcast_address_obj = json_object_object_get(producer, "broadcast_address");
 		tcp_port_obj = json_object_object_get(producer, "tcp_port");
-
 		broadcast_address = json_object_get_string(broadcast_address_obj);
 		tcp_port = json_object_get_int(tcp_port_obj);
-
 		LM_ERR("%s: broadcast_address %s, port %d\n", __FUNCTION__, broadcast_address, tcp_port);
 
 	}
+
+	dst_pv = (pv_spec_t *)nsq_cb_data->dst;
+	dst_val.rs.s = resp->data->data;
+	dst_val.rs.len = strlen(resp->data->data);
+	dst_val.flags = PV_VAL_STR;
+	dst_pv->setf(nsq_cb_data->msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
 
 	json_object_put(jsobj);
 	json_tokener_free(jstok);
@@ -109,15 +118,13 @@ int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
     char buf[256];
 	str topic_s;
 	str payload_s;
-	pv_spec_t *dst_pv;
-	pv_value_t dst_val;
-	char* last_payload_result = NULL;
-
+	struct nsq_cb_data *nsq_cb_data;
 
 	if (fixup_get_svalue(msg, (gparam_p)topic, &topic_s) != 0) {
 		LM_ERR("cannot get topic string value\n");
 		return -1;
 	}
+
 	if (fixup_get_svalue(msg, (gparam_p)payload, &payload_s) != 0) {
 		LM_ERR("cannot get payload string value\n");
 		return -1;
@@ -127,29 +134,19 @@ int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
     sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
 
-    req = new_http_request(buf, query_handler, loop, NULL);
+	nsq_cb_data = (struct nsq_cb_data *)pkg_malloc(sizeof(struct nsq_cb_data *));
+	nsq_cb_data->msg = msg;
+	nsq_cb_data->loop = loop;
+	nsq_cb_data->dst = dst;
+    req = new_http_request(buf, query_handler, nsq_cb_data, NULL);
     http_client_get(http_client, req);
 	nsq_run(loop);
-
-	int len = strlen("200");
-	last_payload_result = pkg_malloc(len+1);
-	memcpy(last_payload_result, "200", len);
-	last_payload_result[len] = '\0';
-	LM_ERR("last_payload_result %s\n", last_payload_result);
-
-	dst_pv = (pv_spec_t *)dst;
-	dst_val.rs.s = last_payload_result;
-	dst_val.rs.len = strlen(last_payload_result);
-	dst_val.flags = PV_VAL_STR;
-	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
 
 	return 1;
 }
 
 void publish_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
 {
-	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
-			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
 	struct ev_loop *loop = (struct ev_loop *)arg;
 	ev_unloop(loop, EVUNLOOP_ALL);
 	return;
@@ -185,8 +182,6 @@ int nsq_publish(struct sip_msg* msg, char* topic, char* payload)
 
 void consumer_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct NSQMessage *msg, void *ctx)
 {
-	LM_ERR("%s: %ld, %d, %s, %lu, %.*s\n", __FUNCTION__, msg->timestamp, msg->attempts, msg->id,
-        msg->body_length, (int)msg->body_length, msg->body);
     int ret = 0;
 
     buffer_reset(conn->command_buf);
@@ -205,7 +200,6 @@ void consumer_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct
 
 void nsq_consumer_proc(int child_no)
 {
-	LM_ERR("%s:%d\n", __FUNCTION__, __LINE__);
     struct NSQReader *rdr;
     struct ev_loop *loop;
     void *ctx = NULL;
