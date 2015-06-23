@@ -40,7 +40,7 @@ extern str consumer_channel;
 extern str nsqd_address;
 
 struct nsq_cb_data {
-	struct sip_msg* msg;
+	struct sip_msg *msg;
 	struct ev_loop *loop;
 	char *dst;
 };
