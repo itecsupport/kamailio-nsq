@@ -39,11 +39,17 @@ str lookupd_address = {0,0};
 str consumer_topic = {0,0};
 str nsqd_address = {0,0};
 
+/* module initialization function */
+static int init(void) {
+	//nsq_consumer_loop();
+	return 0;
+}
+
 /* Exported functions */
 static cmd_export_t cmds[]={
-	{"nsq_query", (cmd_function)nsq_query, 3, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
-	{"nsq_publish", (cmd_function)nsq_publish, 2, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+		{"nsq_query", (cmd_function)nsq_query, 3, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
+		{"nsq_publish", (cmd_function)nsq_publish, 2, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
+		{0, 0, 0, 0, 0, 0}
 };
 
 static param_export_t params[]=
@@ -63,7 +69,7 @@ struct module_exports exports = {
 		0,	             	/* exported MI functions */
 		0,				 	/* exported pseudo-variables */
 		0,				 	/* extra processes */
-		0,        			/* module initialization function */
+		init,        		/* module initialization function */
 		0,				 	/* response function*/
 		0,	 				/* destroy function */
 		0       			/* per-child init function */

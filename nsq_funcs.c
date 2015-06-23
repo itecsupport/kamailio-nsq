@@ -48,6 +48,9 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
 			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
 
+	struct ev_loop *loop = (struct ev_loop *)arg;
+	ev_unloop(loop, EVUNLOOP_ALL);
+
 	if (resp->status_code != 200) {
 		free_http_response(resp);
 		free_http_request(req);
@@ -97,9 +100,9 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 	free_http_request(req);
 }
 
-int nsq_query(struct sip_msg* msg, char* json, char* field, char* dst)
+int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 {
-    /*struct HttpRequest *req;
+    struct HttpRequest *req;
 	struct HttpClient * http_client;
     struct ev_loop *loop;
     char buf[256];
@@ -119,11 +122,11 @@ int nsq_query(struct sip_msg* msg, char* json, char* field, char* dst)
 		return -1;
 	}
 
-    loop = ev_default_loop(0);
+    loop = ev_loop_new(0);
     sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
 
-    req = new_http_request(buf, query_handler, buf, NULL);
+    req = new_http_request(buf, query_handler, loop, NULL);
     http_client_get(http_client, req);
 	nsq_run(loop);
 
@@ -137,7 +140,7 @@ int nsq_query(struct sip_msg* msg, char* json, char* field, char* dst)
 	dst_val.rs.s = last_payload_result;
 	dst_val.rs.len = strlen(last_payload_result);
 	dst_val.flags = PV_VAL_STR;
-	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);*/
+	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
 
 	return 1;
 }
@@ -146,6 +149,8 @@ void publish_handler(struct HttpRequest *req, struct HttpResponse *resp, void *a
 {
 	LM_ERR("%s: status_code %d, body %.*s\n", __FUNCTION__, resp->status_code,
 			(int)BUFFER_HAS_DATA(resp->data), resp->data->data);
+	struct ev_loop *loop = (struct ev_loop *)arg;
+	ev_unloop(loop, EVUNLOOP_ALL);
 	return;
 }
 
@@ -167,18 +172,48 @@ int nsq_publish(struct sip_msg* msg, char* topic, char* payload)
 		return -1;
 	}
 
-    loop = ev_default_loop(0);
+    loop = ev_loop_new(0);
     sprintf(buf, "http://%s/put?topic=%s", nsqd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
-
-	LM_ERR("%s:%d, payload %s\n", __FUNCTION__, __LINE__, payload_s.s);
-	/*len = strlen(payload_s.s);
-	char *data;
-	data = pkg_malloc(len+1);
-	memcpy(data, "data", len);*/
-    req = new_http_request(buf, publish_handler, buf, payload_s.s);
+    req = new_http_request(buf, publish_handler, loop, payload_s.s);
     http_client_get(http_client, req);
 	nsq_run(loop);
 
 	return 1;
+}
+
+void consumer_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct NSQMessage *msg, void *ctx)
+{
+	LM_ERR("%s: %ld, %d, %s, %lu, %.*s\n", __FUNCTION__, msg->timestamp, msg->attempts, msg->id,
+        msg->body_length, (int)msg->body_length, msg->body);
+    int ret = 0;
+
+    buffer_reset(conn->command_buf);
+    if(ret < 0){
+        nsq_requeue(conn->command_buf, msg->id, 100);
+    }else{
+        nsq_finish(conn->command_buf, msg->id);
+    }
+    buffered_socket_write_buffer(conn->bs, conn->command_buf);
+    buffer_reset(conn->command_buf);
+    nsq_ready(conn->command_buf, rdr->max_in_flight);
+    buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+    free_nsq_message(msg);
+}
+
+void nsq_consumer_loop()
+{
+	LM_ERR("%s:%d\n", __FUNCTION__, __LINE__);
+    struct NSQReader *rdr;
+    struct ev_loop *loop;
+    void *ctx = NULL;
+
+    loop = ev_loop_new(0);
+    rdr = new_nsq_reader(loop, "test", "ch", (void *)ctx,
+        NULL, NULL, consumer_handler);
+    nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+    nsq_run(loop);
+
+	return;
 }

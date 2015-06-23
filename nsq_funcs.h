@@ -29,5 +29,6 @@
 
 int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst);
 int nsq_publish(struct sip_msg* msg, char* topic, char* payload);
+void nsq_consumer_loop();
 
 #endif
