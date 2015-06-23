@@ -27,6 +27,7 @@
 
 #include "../../mod_fix.h"
 #include "../../sr_module.h"
+#include "../../cfg/cfg_struct.h"
 
 #include "nsq_funcs.h"
 
@@ -39,9 +40,34 @@ str lookupd_address = {0,0};
 str consumer_topic = {0,0};
 str nsqd_address = {0,0};
 
-/* module initialization function */
-static int init(void) {
-	//nsq_consumer_loop();
+
+static int init(void)
+{
+	int total_workers = 1;
+
+	register_procs(total_workers);
+	cfg_register_child(total_workers);
+
+    return 0;
+}
+
+/* module child initialization function */
+static int child_init(int rank)
+{
+	int pid;
+
+	if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
+		return 0;
+
+	if (rank==PROC_MAIN) {
+		pid=fork_process(2, "NSQ Consumer", 1);
+		LM_ERR("%s:%d, pid %d\n", __FUNCTION__, __LINE__, pid);
+		if (pid<0)
+			return -1; /* error */
+		if(pid==0){
+			nsq_consumer_proc(1);
+		}
+	}
 	return 0;
 }
 
@@ -72,7 +98,7 @@ struct module_exports exports = {
 		init,        		/* module initialization function */
 		0,				 	/* response function*/
 		0,	 				/* destroy function */
-		0       			/* per-child init function */
+		child_init       	/* per-child init function */
 };
 
 static int fixup_get_field(void** param, int param_no)

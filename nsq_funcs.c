@@ -202,14 +202,14 @@ void consumer_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct
     free_nsq_message(msg);
 }
 
-void nsq_consumer_loop()
+void nsq_consumer_proc(int child_no)
 {
 	LM_ERR("%s:%d\n", __FUNCTION__, __LINE__);
     struct NSQReader *rdr;
     struct ev_loop *loop;
     void *ctx = NULL;
 
-    loop = ev_loop_new(0);
+    loop = ev_default_loop(0);
     rdr = new_nsq_reader(loop, "test", "ch", (void *)ctx,
         NULL, NULL, consumer_handler);
     nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
