@@ -40,6 +40,8 @@ str lookupd_address = {0,0};
 str consumer_topic = {0,0};
 str consumer_channel = {0,0};
 str nsqd_address = {0,0};
+str consumer_event_key = {0,0};
+str consumer_event_subkey = {0,0};
 
 
 static int init(void)
@@ -85,6 +87,8 @@ static param_export_t params[]=
 		{"consumer_topic", STR_PARAM, &consumer_topic.s},
 		{"consumer_channel", STR_PARAM, &consumer_channel.s},
 		{"nsqd_address", STR_PARAM, &nsqd_address.s},
+		{"consumer_event_key", STR_PARAM, &consumer_event_key.s},
+		{"consumer_event_subkey", STR_PARAM, &consumer_event_subkey.s},
 		{ 0, 0, 0 }
 };
 
