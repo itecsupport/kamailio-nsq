@@ -92,6 +92,11 @@ static param_export_t params[]=
 		{ 0, 0, 0 }
 };
 
+static pv_export_t nsq_mod_pvs[] = {
+	{{"nsqE", (sizeof("nsqE")-1)}, PVT_OTHER, nsq_pv_get_event_payload, 0,	0, 0, 0, 0},
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
 struct module_exports exports = {
 		"nsq",
 		DEFAULT_DLFLAGS, 	/* dlopen flags */
@@ -99,7 +104,7 @@ struct module_exports exports = {
 		params,		 		/* Exported parameters */
 		0,		 			/* exported statistics */
 		0,	             	/* exported MI functions */
-		0,				 	/* exported pseudo-variables */
+		nsq_mod_pvs,		/* exported pseudo-variables */
 		0,				 	/* extra processes */
 		init,        		/* module initialization function */
 		0,				 	/* response function*/

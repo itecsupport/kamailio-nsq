@@ -182,28 +182,11 @@ int nsq_publish(struct sip_msg* msg, char* topic, char* payload)
 	return 1;
 }
 
-struct json_object* nsq_json_parse(const char *str)
+char* eventData = NULL;
+
+int nsq_pv_get_event_payload(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-    struct json_tokener* tok;
-    struct json_object* obj;
-
-    tok = json_tokener_new();
-    if (!tok) {
-      LM_ERR("Error parsing json: cpuld not allocate tokener\n");
-      return NULL;
-    }
-
-    obj = json_tokener_parse_ex(tok, str, -1);
-    if(tok->err != json_tokener_success) {
-      LM_ERR("Error parsing json: %s\n", json_tokener_error_desc(tok->err));
-      LM_ERR("%s\n", str);
-      if (obj != NULL)
-	   json_object_put(obj);
-      obj = NULL;
-    }
-
-    json_tokener_free(tok);
-    return obj;
+	return eventData == NULL ? pv_get_null(msg, param, res) : pv_get_strzval(msg, param, res, eventData);
 }
 
 int nsq_consumer_fire_event(char *key_obj_fire)
@@ -242,7 +225,8 @@ void nsq_consumer_event(char *payload)
 	char *subkey = consumer_event_subkey.s;
 	const char *key_obj_value, *subkey_obj_value;
 
-	LM_ERR("%s: error parsing JSON, payload %s\n", __FUNCTION__, payload);
+    eventData = payload;
+
 	jstok = json_tokener_new();
 	jsobj = json_tokener_parse_ex(jstok, payload, strlen(payload));
 	if (!jsobj) {
@@ -336,6 +320,8 @@ void nsq_consumer_event(char *payload)
 		}
 	}
 
+    eventData = NULL;
+
 	return;
 }
 
@@ -374,3 +360,4 @@ void nsq_consumer_proc(int child_no)
 
 	return;
 }
+
