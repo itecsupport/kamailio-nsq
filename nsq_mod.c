@@ -28,8 +28,10 @@
 #include "../../mod_fix.h"
 #include "../../sr_module.h"
 #include "../../cfg/cfg_struct.h"
+#include "../../lib/srdb1/db.h"
 
 #include "nsq_funcs.h"
+#include "nsq_pua.h"
 
 MODULE_VERSION
 
@@ -42,10 +44,47 @@ str consumer_channel = {0,0};
 str nsqd_address = {0,0};
 str consumer_event_key = {0,0};
 str consumer_event_subkey = {0,0};
+/* database connection */
+str knsq_db_url = {0,0};
+str knsq_presentity_table = str_init("presentity");
+db_func_t knsq_pa_dbf;
+db1_con_t *knsq_pa_db = NULL;
 
 
 static int init(void)
 {
+	knsq_db_url.len = knsq_db_url.s ? strlen(knsq_db_url.s) : 0;
+	LM_DBG("db_url=%s/%d/%p\n", ZSW(knsq_db_url.s), knsq_db_url.len, knsq_db_url.s);
+	knsq_presentity_table.len = strlen(knsq_presentity_table.s);
+
+	if(knsq_db_url.len > 0) {
+
+		/* binding to database module  */
+		if (db_bind_mod(&knsq_db_url, &knsq_pa_dbf))
+		{
+			LM_ERR("Database module not found\n");
+			return -1;
+		}
+
+
+		if (!DB_CAPABILITY(knsq_pa_dbf, DB_CAP_ALL))
+		{
+			LM_ERR("Database module does not implement all functions"
+					" needed by kazoo module\n");
+			return -1;
+		}
+
+		knsq_pa_db = knsq_pa_dbf.init(&knsq_db_url);
+		if (!knsq_pa_db)
+		{
+			LM_ERR("Connection to database failed\n");
+			return -1;
+		}
+
+		knsq_pa_dbf.close(knsq_pa_db);
+		knsq_pa_db = NULL;
+	}
+
 	int total_workers = 1;
 
 	register_procs(total_workers);
@@ -71,6 +110,27 @@ static int child_init(int rank)
 			nsq_consumer_proc(1);
 		}
 	}
+
+	if (knsq_pa_dbf.init==0)
+	{
+		LM_CRIT("child_init: database not bound\n");
+		return -1;
+	}
+	knsq_pa_db = knsq_pa_dbf.init(&knsq_db_url);
+	if (!knsq_pa_db)
+	{
+		LM_ERR("child %d: unsuccessful connecting to database\n", rank);
+		return -1;
+	}
+
+	if (knsq_pa_dbf.use_table(knsq_pa_db, &knsq_presentity_table) < 0)
+	{
+		LM_ERR( "child %d:unsuccessful use_table presentity_table\n", rank);
+		return -1;
+	}
+
+	LM_DBG("child %d: Database connection opened successfully\n", rank);
+
 	return 0;
 }
 
@@ -78,6 +138,7 @@ static int child_init(int rank)
 static cmd_export_t cmds[]={
 		{"nsq_query", (cmd_function)nsq_query, 3, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
 		{"nsq_publish", (cmd_function)nsq_publish, 2, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
+		{"nsq_pua_publish", (cmd_function) nsq_pua_publish, 1, 0, 0, ANY_ROUTE},
 		{0, 0, 0, 0, 0, 0}
 };
 
@@ -89,6 +150,7 @@ static param_export_t params[]=
 		{"nsqd_address", STR_PARAM, &nsqd_address.s},
 		{"consumer_event_key", STR_PARAM, &consumer_event_key.s},
 		{"consumer_event_subkey", STR_PARAM, &consumer_event_subkey.s},
+		{"db_url", STR_PARAM, &knsq_db_url.s},
 		{ 0, 0, 0 }
 };
 

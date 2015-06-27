@@ -32,7 +32,14 @@
 #include "../../mod_fix.h"
 #include "../../lvalue.h"
 
+#include "../../sr_module.h"
+#include "../../lib/srdb1/db.h"
+#include "../../dprint.h"
+#include "../../lib/kmi/mi.h"
+#include "../../cfg/cfg_struct.h"
+
 #include "nsq_funcs.h"
+#include "nsq_pua.h"
 
 extern str lookupd_address;
 extern str consumer_topic;
@@ -46,6 +53,15 @@ struct nsq_cb_data {
 	struct ev_loop *loop;
 	char *dst;
 };
+
+int dbk_include_entity = 1;
+int dbk_pua_mode = 1;
+
+/* database connection */
+db1_con_t *nsq_pa_db = NULL;
+db_func_t nsq_pa_dbf;
+str nsq_presentity_table = str_init("presentity");
+str nsq_db_url = {0,0};
 
 void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg)
 {
@@ -360,4 +376,6 @@ void nsq_consumer_proc(int child_no)
 
 	return;
 }
+
+
 
