@@ -1,10 +1,3 @@
-/*
- * const.h
- *
- *  Created on: Jul 15, 2014
- *      Author: root
- */
-
 #ifndef NSQ_CONST_H_
 #define NSQ_CONST_H_
 

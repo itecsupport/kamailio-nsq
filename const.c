@@ -1,10 +1,3 @@
-/*
- * const.c
- *
- *  Created on: Jul 15, 2014
- *      Author: root
- */
-
 #include "../../str.h"
 
 str str_event_message_summary = str_init("message-summary");
