@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <json-c/json.h>
 #include "nsq.h"
 #include "http.h"
@@ -30,8 +31,13 @@ struct nsq_cb_data {
 	char *dst;
 };
 
-int dbk_include_entity = 1;
-int dbk_pua_mode = 1;
+#define KEY_SAFE(C)  ((C >= 'a' && C <= 'z') || \
+                      (C >= 'A' && C <= 'Z') || \
+                      (C >= '0' && C <= '9') || \
+                      (C == '-' || C == '~'  || C == '_'))
+#define HI4(C) (C>>4)
+#define LO4(C) (C & 0x0F)
+#define hexint(C) (C < 10?('0' + C):('A'+ C - 10))
 
 /* database connection */
 db1_con_t *nsq_pa_db = NULL;
@@ -353,5 +359,106 @@ void nsq_consumer_proc(int child_no)
 	return;
 }
 
+char *nsq_util_encode(const str * key, char *dest) {
+    if ((key->len == 1) && (key->s[0] == '#' || key->s[0] == '*')) {
+	*dest++ = key->s[0];
+	return dest;
+    }
+    char *p, *end;
+    for (p = key->s, end = key->s + key->len; p < end; p++) {
+	if (KEY_SAFE(*p)) {
+	    *dest++ = *p;
+	} else if (*p == '.') {
+	    memcpy(dest, "\%2E", 3);
+	    dest += 3;
+	} else if (*p == ' ') {
+	    *dest++ = '+';
+	} else {
+	    *dest++ = '%';
+	    sprintf(dest, "%c%c", hexint(HI4(*p)), hexint(LO4(*p)));
+	    dest += 2;
+	}
+    }
+    *dest = '\0';
+    return dest;
+}
 
+int nsq_encode_ex(str* unencoded, pv_value_p dst_val)
+{
+	char buff[256];
+	memset(buff,0, sizeof(buff));
+	nsq_util_encode(unencoded, buff);
+
+	int len = strlen(buff);
+	dst_val->rs.s = pkg_malloc(len+1);
+	memcpy(dst_val->rs.s, buff, len);
+	dst_val->rs.s[len] = '\0';
+	dst_val->rs.len = len;
+	dst_val->flags = PV_VAL_STR | PV_VAL_PKG;
+
+	return 1;
+
+}
+
+int nsq_encode(struct sip_msg* msg, char* unencoded, char* encoded)
+{
+	LM_ERR("start nsq_amqp_encode\n");
+    str unencoded_s;
+	pv_spec_t *dst_pv;
+	pv_value_t dst_val;
+	dst_pv = (pv_spec_t *)encoded;
+
+	if (fixup_get_svalue(msg, (gparam_p)unencoded, &unencoded_s) != 0) {
+		LM_ERR("cannot get unencoded string value\n");
+		return -1;
+	}
+
+	nsq_encode_ex(&unencoded_s, &dst_val);
+	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
+
+	if(dst_val.flags & PV_VAL_PKG)
+		pkg_free(dst_val.rs.s);
+	else if(dst_val.flags & PV_VAL_SHM)
+		shm_free(dst_val.rs.s);
+
+
+	return 1;
+
+}
+
+int fixup_nsq_encode(void** param, int param_no)
+{
+  if (param_no == 1 ) {
+		return fixup_spve_null(param, 1);
+	}
+
+	if (param_no == 2) {
+		if (fixup_pvar_null(param, 1) != 0) {
+		    LM_ERR("failed to fixup result pvar\n");
+		    return -1;
+		}
+		if (((pv_spec_t *)(*param))->setf == NULL) {
+		    LM_ERR("result pvar is not writeble\n");
+		    return -1;
+		}
+		return 0;
+	}
+
+	LM_ERR("invalid parameter number <%d>\n", param_no);
+	return -1;
+}
+
+int fixup_nsq_encode_free(void** param, int param_no)
+{
+	if (param_no == 1 ) {
+		return fixup_free_spve_null(param, 1);
+	}
+
+	if (param_no == 2) {
+		return fixup_free_pvar_null(param, 1);
+	}
+
+	LM_ERR("invalid parameter number <%d>\n", param_no);
+	return -1;
+}
 

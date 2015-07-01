@@ -55,6 +55,21 @@
 </dialog>\
 </dialog-info>"
 
+#define MESSAGE_SAMMURY "Messages-Waiting: %.*s\r\nMessage-Account: %.*s\r\nVoice-Message: %.*s/%.*s (%.*s/%.*s)\r\n"
+
+#define PRESENCE_BODY  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\
+<presence xmlns=\"urn:ietf:params:xml:ns:pidf\" xmlns:dm=\"urn:ietf:params:xml:ns:pidf:data-model\" xmlns:rpid=\"urn:ietf:params:xml:ns:pidf:rpid\" xmlns:c=\"urn:ietf:params:xml:ns:pidf:cipid\" entity=\"%s\"> \
+<tuple xmlns=\"urn:ietf:params:xml:ns:pidf\" id=\"%s\">\
+<status>\
+<basic>%s</basic>\
+</status>\
+</tuple>\
+<note xmlns=\"urn:ietf:params:xml:ns:pidf\">%s</note>\
+<dm:person xmlns:dm=\"urn:ietf:params:xml:ns:pidf:data-model\" xmlns:rpid=\"urn:ietf:params:xml:ns:pidf:rpid\" id=\"1\">\
+<rpid:activities>%s</rpid:activities>\
+<dm:note>%s</dm:note>\
+</dm:person>\
+</presence>"
 
 #define DIALOGINFO_BODY "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\
 <dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"1\" state=\"full\" entity=\"%.*s\">\

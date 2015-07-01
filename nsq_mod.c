@@ -114,7 +114,8 @@ static int child_init(int rank)
 static cmd_export_t cmds[]={
 		{"nsq_query", (cmd_function)nsq_query, 3, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
 		{"nsq_publish", (cmd_function)nsq_publish, 2, fixup_get_field, fixup_get_field_free, ANY_ROUTE},
-		{"nsq_pua_publish", (cmd_function) nsq_pua_publish, 1, 0, 0, ANY_ROUTE},
+		{"nsq_pua_publish", (cmd_function) nsq_pua_publish, 1, fixup_get_field, fixup_get_field, ANY_ROUTE},
+		{"nsq_encode", (cmd_function) nsq_encode, 2, fixup_nsq_encode, fixup_nsq_encode_free, ANY_ROUTE},
 		{0, 0, 0, 0, 0, 0}
 };
 
