@@ -1,0 +1,4 @@
+#setid sipdest flags priority attrs
+0 sip:10.10.0.81:5060 2 0 duid=1
+0 sip:10.10.0.82:5060 2 0 duid=2
+
