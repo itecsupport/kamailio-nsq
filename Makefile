@@ -11,7 +11,7 @@ auto_gen=
 NAME=nsq.so
 JLIB=json
 LIBS=-lnsq -lev -levbuffsock -lcurl -ljson-c
-DEFS+=-I$(LOCALBASE)/include
+DEFS+=-I$(LOCALBASE)/include -I/usr/local/include
 
 DEFS+=-DKAMAILIO_MOD_INTERFACE
 

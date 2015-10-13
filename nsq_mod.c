@@ -25,10 +25,18 @@ str knsq_db_url = {0,0};
 str knsq_presentity_table = str_init("presentity");
 db_func_t knsq_pa_dbf;
 db1_con_t *knsq_pa_db = NULL;
+nsq_cmd_pipe_fds[2] = {-1,-1};
+int nsq_cmd_pipe = 0;
 
 
 static int init(void)
 {
+	int ret = daemon_status_send(1);
+
+	if (ret == -1) {
+		LM_DBG("Can't send to daemon");
+	}
+
 	knsq_db_url.len = knsq_db_url.s ? strlen(knsq_db_url.s) : 0;
 	LM_DBG("db_url=%s/%d/%p\n", ZSW(knsq_db_url.s), knsq_db_url.len, knsq_db_url.s);
 	knsq_presentity_table.len = strlen(knsq_presentity_table.s);
@@ -61,31 +69,26 @@ static int init(void)
 		knsq_pa_db = NULL;
 	}
 
-	int total_workers = 1;
+	if (pipe(nsq_cmd_pipe_fds) < 0) {
+		LM_ERR("command pipe call failed");
+		return -1;
+	}
+
+	int total_workers = 10;
 
 	register_procs(total_workers);
 	cfg_register_child(total_workers);
+	nsq_cmd_pipe = nsq_cmd_pipe_fds[1];
 
-    return 0;
+	LM_DBG("nsq init() done");
+
+	return 0;
 }
 
 /* module child initialization function */
-static int child_init(int rank)
+int child_init(int rank)
 {
 	int pid;
-
-	if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
-		return 0;
-
-	if (rank==PROC_MAIN) {
-		pid=fork_process(2, "NSQ Consumer", 1);
-		LM_ERR("%s:%d, pid %d\n", __FUNCTION__, __LINE__, pid);
-		if (pid<0)
-			return -1; /* error */
-		if(pid==0){
-			nsq_consumer_proc(1);
-		}
-	}
 
 	if (knsq_pa_dbf.init==0)
 	{
@@ -106,6 +109,8 @@ static int child_init(int rank)
 	}
 
 	LM_DBG("child %d: Database connection opened successfully\n", rank);
+
+	nsqd_subscribe(rank);
 
 	return 0;
 }

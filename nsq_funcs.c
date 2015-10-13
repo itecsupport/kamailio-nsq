@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <json-c/json.h>
 #include "nsq.h"
-#include "http.h"
-#include "utlist.h"
+#include "/usr/local/include/http.h"
+#include "/usr/local/include/utlist.h"
 
 #include "../../mod_fix.h"
 #include "../../lvalue.h"
@@ -66,14 +66,12 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 	jstok = json_tokener_new();
 	jsobj = json_tokener_parse_ex(jstok, resp->data->data, (int)BUFFER_HAS_DATA(resp->data));
 	if (!jsobj) {
-		LM_ERR("%s: error parsing JSON\n", __FUNCTION__);
 		json_tokener_free(jstok);
 		return;
 	}
 
 	data = json_object_object_get(jsobj, "data");
 	if (!jsobj) {
-		LM_ERR("%s: error getting 'data' key\n", __FUNCTION__);
 		json_object_put(jsobj);
 		json_tokener_free(jstok);
 		return;
@@ -81,7 +79,6 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 
 	producers = json_object_object_get(data, "producers");
 	if (!producers) {
-		LM_ERR("%s: error getting 'producers' key\n", __FUNCTION__);
 		json_object_put(jsobj);
 		json_tokener_free(jstok);
 		return;
@@ -93,7 +90,6 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 		tcp_port_obj = json_object_object_get(producer, "tcp_port");
 		broadcast_address = json_object_get_string(broadcast_address_obj);
 		tcp_port = json_object_get_int(tcp_port_obj);
-		LM_ERR("%s: broadcast_address %s, port %d\n", __FUNCTION__, broadcast_address, tcp_port);
 
 	}
 
@@ -110,15 +106,78 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 	free_http_request(req);
 }
 
+static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
+	struct NSQMessage *msg, void *ctx)
+{
+	int ret = 0;
+
+
+	while (1) {
+		buffer_reset(conn->command_buf);
+
+		if(ret < 0){
+			nsq_requeue(conn->command_buf, msg->id, 100);
+		} else {
+			nsq_finish(conn->command_buf, msg->id);
+		}
+		buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+		buffer_reset(conn->command_buf);
+		nsq_ready(conn->command_buf, rdr->max_in_flight);
+		buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+		free_nsq_message(msg);
+	}
+}
+
+
+int
+nsqd_subscribe(int rank)
+{
+	char buf[256];
+	int ret, rtb;
+	struct sip_msg *fmsg;
+	void *ctx = NULL;
+	struct NSQReader *rdr;
+	struct ev_loop *loop;
+	struct run_act_ctx run_ctx;
+
+        if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
+                return 0;
+
+	if (rank == PROC_MAIN) {
+		ret = fork_process(0, "NSQ consumer", 1);
+		if (ret < 0) {
+			fprintf(stderr, "Can't fork : %s\n", strerror(errno));
+			return -1;
+		} else {
+			if (ret == 0)
+				;
+		}
+	}
+
+	sprintf(buf, "nsq:%s", consumer_topic.s);
+	ret = route_get(&event_rt, buf);
+
+	loop = ev_default_loop(0);
+	rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
+		(void *)ctx, NULL, NULL, message_handler);
+	nsq_reader_connect_to_nsqd(rdr, "12.0.0.100", 4150);
+	//nsq_run(loop);
+
+	return 0;
+}
+
 int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 {
-    struct HttpRequest *req;
+	struct HttpRequest *req;
 	struct HttpClient * http_client;
-    struct ev_loop *loop;
-    char buf[256];
+	struct ev_loop *loop;
+	char buf[256];
 	str topic_s;
 	str payload_s;
 	struct nsq_cb_data *nsq_cb_data;
+	void *ctx = NULL;
 
 	if (fixup_get_svalue(msg, (gparam_p)topic, &topic_s) != 0) {
 		LM_ERR("cannot get topic string value\n");
@@ -130,17 +189,17 @@ int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 		return -1;
 	}
 
-    loop = ev_loop_new(0);
-    sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, topic_s.s);
+	loop = ev_default_loop(0);
+	sprintf(buf, "http://%s/lookup?topic=%s", lookupd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
 
 	nsq_cb_data = (struct nsq_cb_data *)pkg_malloc(sizeof(struct nsq_cb_data *));
 	nsq_cb_data->msg = msg;
 	nsq_cb_data->loop = loop;
 	nsq_cb_data->dst = dst;
-    req = new_http_request(buf, query_handler, nsq_cb_data, NULL);
-    http_client_get(http_client, req);
-	nsq_run(loop);
+	req = new_http_request(buf, query_handler, nsq_cb_data, NULL);
+	http_client_get(http_client, req);
+	//nsq_run(loop);
 
 	return 1;
 }
@@ -170,12 +229,12 @@ int nsq_publish(struct sip_msg* msg, char* topic, char* payload)
 		return -1;
 	}
 
-    loop = ev_loop_new(0);
-    sprintf(buf, "http://%s/put?topic=%s", nsqd_address.s, topic_s.s);
+	loop = ev_loop_new(0);
+	sprintf(buf, "http://%s/put?topic=%s", nsqd_address.s, topic_s.s);
 	http_client = new_http_client(loop);
-    req = new_http_request(buf, publish_handler, loop, payload_s.s);
-    http_client_get(http_client, req);
-	nsq_run(loop);
+	req = new_http_request(buf, publish_handler, loop, payload_s.s);
+	http_client_get(http_client, req);
+	//nsq_run(loop);
 
 	return 1;
 }
@@ -200,7 +259,6 @@ int nsq_consumer_fire_event(char *key_obj_fire)
 		LM_DBG("route %s does not exist\n", key_obj_fire);
 		return -2;
 	}
-	LM_DBG("executing event_route[%s] (%d)\n", key_obj_fire, rt);
 	if(faked_msg_init()<0)
 		return -2;
 	fmsg = faked_msg_next();
@@ -223,7 +281,7 @@ void nsq_consumer_event(char *payload)
 	char *subkey = consumer_event_subkey.s;
 	const char *key_obj_value, *subkey_obj_value;
 
-    eventData = payload;
+	eventData = payload;
 
 	jstok = json_tokener_new();
 	jsobj = json_tokener_parse_ex(jstok, payload, strlen(payload));
@@ -318,7 +376,7 @@ void nsq_consumer_event(char *payload)
 		}
 	}
 
-    eventData = NULL;
+	eventData = NULL;
 
 	return;
 }
@@ -328,9 +386,9 @@ void nsq_consumer_handler(struct NSQReader *rdr, struct NSQDConnection *conn, st
     int ret = 0;
     nsq_consumer_event(msg->body);
     buffer_reset(conn->command_buf);
-    if(ret < 0){
+    if(ret < 0) {
         nsq_requeue(conn->command_buf, msg->id, 100);
-    }else{
+    } else {
         nsq_finish(conn->command_buf, msg->id);
     }
     buffered_socket_write_buffer(conn->bs, conn->command_buf);
@@ -346,15 +404,12 @@ void nsq_consumer_proc(int child_no)
     struct NSQReader *rdr;
     struct ev_loop *loop;
     void *ctx = NULL;
-    char ip[20];
-    int port;
 
     loop = ev_default_loop(0);
-    rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s, (void *)ctx,
-        NULL, NULL, nsq_consumer_handler);
-	sscanf(lookupd_address.s, "%99[^:]:%99d", ip, &port);
-    nsq_reader_add_nsqlookupd_endpoint(rdr, ip, port);
-    nsq_run(loop);
+    rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
+	(void *)ctx, NULL, NULL, nsq_consumer_handler);
+    nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+    //nsq_run(loop);
 
 	return;
 }
@@ -402,8 +457,7 @@ int nsq_encode_ex(str* unencoded, pv_value_p dst_val)
 
 int nsq_encode(struct sip_msg* msg, char* unencoded, char* encoded)
 {
-	LM_ERR("start nsq_amqp_encode\n");
-    str unencoded_s;
+	str unencoded_s;
 	pv_spec_t *dst_pv;
 	pv_value_t dst_val;
 	dst_pv = (pv_spec_t *)encoded;
@@ -416,11 +470,10 @@ int nsq_encode(struct sip_msg* msg, char* unencoded, char* encoded)
 	nsq_encode_ex(&unencoded_s, &dst_val);
 	dst_pv->setf(msg, &dst_pv->pvp, (int)EQ_T, &dst_val);
 
-	if(dst_val.flags & PV_VAL_PKG)
+	if (dst_val.flags & PV_VAL_PKG)
 		pkg_free(dst_val.rs.s);
-	else if(dst_val.flags & PV_VAL_SHM)
+	else if (dst_val.flags & PV_VAL_SHM)
 		shm_free(dst_val.rs.s);
-
 
 	return 1;
 
