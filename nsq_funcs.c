@@ -111,23 +111,35 @@ static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 {
 	int ret = 0;
 
+	/***************************************
+	 CLINT'S SUDO CODE STARTS HERE
+	****************************************/
 
-	while (1) {
-		buffer_reset(conn->command_buf);
+	topic = rdr->topic //Get the topic name from the `rdr` variable
+	route_get("nsq_consumer_event_" + topic) // Get the route with prefix and topic
+	//TODO: Somehow set exported variable that will be available in the route context
+	$nsqv = msg // and set the message contents to that variable
+	fire_route() // Fire the route
 
-		if(ret < 0){
-			nsq_requeue(conn->command_buf, msg->id, 100);
-		} else {
-			nsq_finish(conn->command_buf, msg->id);
-		}
-		buffered_socket_write_buffer(conn->bs, conn->command_buf);
 
-		buffer_reset(conn->command_buf);
-		nsq_ready(conn->command_buf, rdr->max_in_flight);
-		buffered_socket_write_buffer(conn->bs, conn->command_buf);
+	/***************************************
+	 CLINT'S SUDO CODE ENDS HERE
+	****************************************/
 
-		free_nsq_message(msg);
+	buffer_reset(conn->command_buf);
+
+	if(ret < 0){
+		nsq_requeue(conn->command_buf, msg->id, 100);
+	} else {
+		nsq_finish(conn->command_buf, msg->id);
 	}
+	buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+	buffer_reset(conn->command_buf);
+	nsq_ready(conn->command_buf, rdr->max_in_flight);
+	buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+	free_nsq_message(msg);
 }
 
 
