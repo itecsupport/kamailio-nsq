@@ -1,4 +1,4 @@
-nsq_funcs.o: nsq_funcs.c /usr/local/include/http.h \
+nsq_funcs.o: nsq_funcs.c nsq.h utlist.h /usr/local/include/http.h \
  /usr/local/include/utlist.h ../../mod_fix.h ../../sr_module.h \
  ../../parser/msg_parser.h ../../parser/../comp_defs.h \
  ../../parser/../str.h ../../parser/../lump_struct.h \
@@ -11,8 +11,10 @@ nsq_funcs.o: nsq_funcs.c /usr/local/include/http.h \
  ../../parser/../cfg_core.h ../../parser/../cfg/cfg.h \
  ../../parser/../cfg/../str.h ../../parser/../mem/mem.h \
  ../../parser/../mem/../config.h ../../parser/../mem/../dprint.h \
- ../../parser/../mem/f_malloc.h ../../parser/../mem/meminfo.h \
- ../../parser/../mem/src_loc.h ../../parser/../mem/shm_mem.h \
+ ../../parser/../mem/pkg.h ../../parser/../mem/memapi.h \
+ ../../parser/../mem/src_loc.h ../../parser/../mem/meminfo.h \
+ ../../parser/../mem/memdbg.h ../../parser/../mem/../cfg/cfg.h \
+ ../../parser/../mem/shm_mem.h ../../parser/../mem/shm.h \
  ../../parser/../mem/../lock_ops.h ../../parser/../mem/../futexlock.h \
  ../../parser/../mem/../atomic/atomic_common.h \
  ../../parser/../mem/../atomic/atomic_native.h \
@@ -44,7 +46,12 @@ nsq_funcs.o: nsq_funcs.c /usr/local/include/http.h \
  ../../cfg/../mem/shm_mem.h ../../cfg/../locking.h \
  ../../cfg/../compiler_opt.h ../../cfg/../bit_test.h ../../cfg/cfg.h \
  nsq_funcs.h ../../parser/msg_parser.h ../../lib/kcore/faked_msg.h \
- ../../lib/kcore/../../parser/msg_parser.h nsq_pua.h
+ ../../lib/kcore/../../fmsg.h ../../lib/kcore/../../parser/msg_parser.h \
+ nsq_pua.h
+
+nsq.h:
+
+utlist.h:
 
 /usr/local/include/http.h:
 
@@ -98,13 +105,21 @@ nsq_funcs.o: nsq_funcs.c /usr/local/include/http.h \
 
 ../../parser/../mem/../dprint.h:
 
-../../parser/../mem/f_malloc.h:
+../../parser/../mem/pkg.h:
 
-../../parser/../mem/meminfo.h:
+../../parser/../mem/memapi.h:
 
 ../../parser/../mem/src_loc.h:
 
+../../parser/../mem/meminfo.h:
+
+../../parser/../mem/memdbg.h:
+
+../../parser/../mem/../cfg/cfg.h:
+
 ../../parser/../mem/shm_mem.h:
+
+../../parser/../mem/shm.h:
 
 ../../parser/../mem/../lock_ops.h:
 
@@ -269,6 +284,8 @@ nsq_funcs.h:
 ../../parser/msg_parser.h:
 
 ../../lib/kcore/faked_msg.h:
+
+../../lib/kcore/../../fmsg.h:
 
 ../../lib/kcore/../../parser/msg_parser.h:
 

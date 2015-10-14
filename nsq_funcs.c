@@ -24,6 +24,7 @@ extern str consumer_channel;
 extern str nsqd_address;
 extern str consumer_event_key;
 extern str consumer_event_subkey;
+extern str nsqA;
 
 struct nsq_cb_data {
 	struct sip_msg *msg;
@@ -110,25 +111,16 @@ static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	struct NSQMessage *msg, void *ctx)
 {
 	int ret = 0;
+	char buf[256];
 
-	/***************************************
-	 CLINT'S SUDO CODE STARTS HERE
-	****************************************/
-
-	topic = rdr->topic //Get the topic name from the `rdr` variable
-	route_get("nsq_consumer_event_" + topic) // Get the route with prefix and topic
-	//TODO: Somehow set exported variable that will be available in the route context
-	$nsqv = msg // and set the message contents to that variable
-	fire_route() // Fire the route
-
-
-	/***************************************
-	 CLINT'S SUDO CODE ENDS HERE
-	****************************************/
+	sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
+	route_get(&event_rt, buf);
+	nsqA.s = "funky";
+	nsq_reader_connect_to_nsqd(rdr, "12.0.0.100", 4150);
 
 	buffer_reset(conn->command_buf);
 
-	if(ret < 0){
+	if (ret < 0) {
 		nsq_requeue(conn->command_buf, msg->id, 100);
 	} else {
 		nsq_finish(conn->command_buf, msg->id);
@@ -174,8 +166,6 @@ nsqd_subscribe(int rank)
 	loop = ev_default_loop(0);
 	rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
 		(void *)ctx, NULL, NULL, message_handler);
-	nsq_reader_connect_to_nsqd(rdr, "12.0.0.100", 4150);
-	//nsq_run(loop);
 
 	return 0;
 }
@@ -211,7 +201,6 @@ int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 	nsq_cb_data->dst = dst;
 	req = new_http_request(buf, query_handler, nsq_cb_data, NULL);
 	http_client_get(http_client, req);
-	//nsq_run(loop);
 
 	return 1;
 }
@@ -246,7 +235,6 @@ int nsq_publish(struct sip_msg* msg, char* topic, char* payload)
 	http_client = new_http_client(loop);
 	req = new_http_request(buf, publish_handler, loop, payload_s.s);
 	http_client_get(http_client, req);
-	//nsq_run(loop);
 
 	return 1;
 }
@@ -421,7 +409,6 @@ void nsq_consumer_proc(int child_no)
     rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
 	(void *)ctx, NULL, NULL, nsq_consumer_handler);
     nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
-    //nsq_run(loop);
 
 	return;
 }

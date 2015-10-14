@@ -10,8 +10,10 @@ nsq_pua.o: nsq_pua.c ../../sr_module.h ../../parser/msg_parser.h \
  ../../parser/../cfg_core.h ../../parser/../cfg/cfg.h \
  ../../parser/../cfg/../str.h ../../parser/../mem/mem.h \
  ../../parser/../mem/../config.h ../../parser/../mem/../dprint.h \
- ../../parser/../mem/f_malloc.h ../../parser/../mem/meminfo.h \
- ../../parser/../mem/src_loc.h ../../parser/../mem/shm_mem.h \
+ ../../parser/../mem/pkg.h ../../parser/../mem/memapi.h \
+ ../../parser/../mem/src_loc.h ../../parser/../mem/meminfo.h \
+ ../../parser/../mem/memdbg.h ../../parser/../mem/../cfg/cfg.h \
+ ../../parser/../mem/shm_mem.h ../../parser/../mem/shm.h \
  ../../parser/../mem/../lock_ops.h ../../parser/../mem/../futexlock.h \
  ../../parser/../mem/../atomic/atomic_common.h \
  ../../parser/../mem/../atomic/atomic_native.h \
@@ -184,13 +186,21 @@ nsq_pua.o: nsq_pua.c ../../sr_module.h ../../parser/msg_parser.h \
 
 ../../parser/../mem/../dprint.h:
 
-../../parser/../mem/f_malloc.h:
+../../parser/../mem/pkg.h:
 
-../../parser/../mem/meminfo.h:
+../../parser/../mem/memapi.h:
 
 ../../parser/../mem/src_loc.h:
 
+../../parser/../mem/meminfo.h:
+
+../../parser/../mem/memdbg.h:
+
+../../parser/../mem/../cfg/cfg.h:
+
 ../../parser/../mem/shm_mem.h:
+
+../../parser/../mem/shm.h:
 
 ../../parser/../mem/../lock_ops.h:
 

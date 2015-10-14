@@ -25,9 +25,9 @@ str knsq_db_url = {0,0};
 str knsq_presentity_table = str_init("presentity");
 db_func_t knsq_pa_dbf;
 db1_con_t *knsq_pa_db = NULL;
-nsq_cmd_pipe_fds[2] = {-1,-1};
-int nsq_cmd_pipe = 0;
 
+str nsqA = {0, 0};
+str nsqE = {0, 0};
 
 static int init(void)
 {
@@ -69,16 +69,10 @@ static int init(void)
 		knsq_pa_db = NULL;
 	}
 
-	if (pipe(nsq_cmd_pipe_fds) < 0) {
-		LM_ERR("command pipe call failed");
-		return -1;
-	}
-
 	int total_workers = 10;
 
 	register_procs(total_workers);
 	cfg_register_child(total_workers);
-	nsq_cmd_pipe = nsq_cmd_pipe_fds[1];
 
 	LM_DBG("nsq init() done");
 
@@ -137,7 +131,8 @@ static param_export_t params[]=
 };
 
 static pv_export_t nsq_mod_pvs[] = {
-	{{"nsqE", (sizeof("nsqE")-1)}, PVT_OTHER, nsq_pv_get_event_payload, 0,	0, 0, 0, 0},
+	{{"nqE", (sizeof("nsqE")-1)}, PVT_OTHER, nsq_pv_get_event_payload, 0, 0, 0, 0, 0},
+	{{"nqA", (sizeof("nsqA")-1)}, PVT_OTHER, nsq_pv_get_event_payload, 0, 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 

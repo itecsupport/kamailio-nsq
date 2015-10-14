@@ -10,8 +10,10 @@ nsq_mod.o: nsq_mod.c ../../mod_fix.h ../../sr_module.h \
  ../../parser/../cfg_core.h ../../parser/../cfg/cfg.h \
  ../../parser/../cfg/../str.h ../../parser/../mem/mem.h \
  ../../parser/../mem/../config.h ../../parser/../mem/../dprint.h \
- ../../parser/../mem/f_malloc.h ../../parser/../mem/meminfo.h \
- ../../parser/../mem/src_loc.h ../../parser/../mem/shm_mem.h \
+ ../../parser/../mem/pkg.h ../../parser/../mem/memapi.h \
+ ../../parser/../mem/src_loc.h ../../parser/../mem/meminfo.h \
+ ../../parser/../mem/memdbg.h ../../parser/../mem/../cfg/cfg.h \
+ ../../parser/../mem/shm_mem.h ../../parser/../mem/shm.h \
  ../../parser/../mem/../lock_ops.h ../../parser/../mem/../futexlock.h \
  ../../parser/../mem/../atomic/atomic_common.h \
  ../../parser/../mem/../atomic/atomic_native.h \
@@ -39,8 +41,8 @@ nsq_mod.o: nsq_mod.c ../../mod_fix.h ../../sr_module.h \
  ../../lib/srdb1/db_res.h ../../lib/srdb1/db_cap.h \
  ../../lib/srdb1/db_row.h ../../lib/srdb1/db_pooling.h \
  ../../lib/srdb1/db_locking.h nsq_funcs.h ../../parser/msg_parser.h \
- ../../lib/kcore/faked_msg.h ../../lib/kcore/../../parser/msg_parser.h \
- nsq_pua.h
+ ../../lib/kcore/faked_msg.h ../../lib/kcore/../../fmsg.h \
+ ../../lib/kcore/../../parser/msg_parser.h nsq_pua.h
 
 ../../mod_fix.h:
 
@@ -90,13 +92,21 @@ nsq_mod.o: nsq_mod.c ../../mod_fix.h ../../sr_module.h \
 
 ../../parser/../mem/../dprint.h:
 
-../../parser/../mem/f_malloc.h:
+../../parser/../mem/pkg.h:
 
-../../parser/../mem/meminfo.h:
+../../parser/../mem/memapi.h:
 
 ../../parser/../mem/src_loc.h:
 
+../../parser/../mem/meminfo.h:
+
+../../parser/../mem/memdbg.h:
+
+../../parser/../mem/../cfg/cfg.h:
+
 ../../parser/../mem/shm_mem.h:
+
+../../parser/../mem/shm.h:
 
 ../../parser/../mem/../lock_ops.h:
 
@@ -243,6 +253,8 @@ nsq_funcs.h:
 ../../parser/msg_parser.h:
 
 ../../lib/kcore/faked_msg.h:
+
+../../lib/kcore/../../fmsg.h:
 
 ../../lib/kcore/../../parser/msg_parser.h:
 
