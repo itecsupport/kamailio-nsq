@@ -50,8 +50,7 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 {
 	struct json_object *jsobj, *data, *producers, *producer, *broadcast_address_obj, *tcp_port_obj;
 	struct json_tokener *jstok;
-	const char *broadcast_address;
-	int i, tcp_port;
+	int i;
 	pv_spec_t *dst_pv;
 	pv_value_t dst_val;
 	struct nsq_cb_data *nsq_cb_data = (struct nsq_cb_data *)arg;
@@ -71,7 +70,7 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 		return;
 	}
 
-	data = json_object_object_get(jsobj, "data");
+	data = json_object_object_get_ex(jsobj, "data", &jsobj);
 	if (!jsobj) {
 		json_object_put(jsobj);
 		json_tokener_free(jstok);
@@ -87,10 +86,8 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 
 	for (i = 0; i < json_object_array_length(producers); i++) {
 		producer = json_object_array_get_idx(producers, i);
-		broadcast_address_obj = json_object_object_get(producer, "broadcast_address");
-		tcp_port_obj = json_object_object_get(producer, "tcp_port");
-		broadcast_address = json_object_get_string(broadcast_address_obj);
-		tcp_port = json_object_get_int(tcp_port_obj);
+		broadcast_address_obj = json_object_object_get_ex(producer, "broadcast_address", &producer);
+		tcp_port_obj = json_object_object_get_ex(producer, "tcp_port", &producer);
 
 	}
 
@@ -110,21 +107,20 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	struct NSQMessage *msg, void *ctx)
 {
-	int ret = 0;
 	char buf[256];
+	int ret = 0;
+
+	LM_ERR("message_handler called\n");
 
 	sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
-	route_get(&event_rt, buf);
+	ret = route_get(&event_rt, buf);
+	LM_ERR("Return from route_get is %d\n", ret);
 	nsqA.s = "funky";
 	nsq_reader_connect_to_nsqd(rdr, "12.0.0.100", 4150);
 
 	buffer_reset(conn->command_buf);
 
-	if (ret < 0) {
-		nsq_requeue(conn->command_buf, msg->id, 100);
-	} else {
-		nsq_finish(conn->command_buf, msg->id);
-	}
+	nsq_finish(conn->command_buf, msg->id);
 	buffered_socket_write_buffer(conn->bs, conn->command_buf);
 
 	buffer_reset(conn->command_buf);
@@ -139,33 +135,45 @@ int
 nsqd_subscribe(int rank)
 {
 	char buf[256];
-	int ret, rtb;
-	struct sip_msg *fmsg;
+	int ret;
 	void *ctx = NULL;
-	struct NSQReader *rdr;
 	struct ev_loop *loop;
-	struct run_act_ctx run_ctx;
+	struct NSQReader *rdr;
 
-        if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
+        if (rank==PROC_INIT || rank==PROC_TCP_MAIN) {
+		LM_ERR("rank invalid, no forking, return\n");
                 return 0;
+	}
 
 	if (rank == PROC_MAIN) {
+		LM_ERR("forking now\n");
 		ret = fork_process(0, "NSQ consumer", 1);
 		if (ret < 0) {
 			fprintf(stderr, "Can't fork : %s\n", strerror(errno));
 			return -1;
 		} else {
-			if (ret == 0)
+			if (ret == 0) {
+				LM_ERR("I am the child\n");
 				;
+			}
+			if (ret != 0) {
+				LM_ERR("I am the parent of kid %d\n", ret);
+			}
 		}
+	} else {
+		LM_ERR("Unknown rank %d\n", rank);
 	}
 
 	sprintf(buf, "nsq:%s", consumer_topic.s);
+	LM_ERR("Getting route %s\n", buf);
 	ret = route_get(&event_rt, buf);
+	LM_ERR("Return from route_get is %d\n", ret);
 
 	loop = ev_default_loop(0);
 	rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
 		(void *)ctx, NULL, NULL, message_handler);
+	nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+	nsq_run(loop);
 
 	return 0;
 }
@@ -179,7 +187,6 @@ int nsq_query(struct sip_msg* msg, char* topic, char* payload, char* dst)
 	str topic_s;
 	str payload_s;
 	struct nsq_cb_data *nsq_cb_data;
-	void *ctx = NULL;
 
 	if (fixup_get_svalue(msg, (gparam_p)topic, &topic_s) != 0) {
 		LM_ERR("cannot get topic string value\n");
@@ -252,7 +259,7 @@ int nsq_consumer_fire_event(char *key_obj_fire)
 	struct run_act_ctx ctx;
 	int rtb, rt;
 
-	LM_DBG("searching event_route[%s]\n", key_obj_fire);
+	LM_ERR("searching event_route[%s]\n", key_obj_fire);
 	rt = route_get(&event_rt, key_obj_fire);
 	if (rt < 0 || event_rt.rlist[rt] == NULL)
 	{
@@ -291,8 +298,8 @@ void nsq_consumer_event(char *payload)
 		return;
 	}
 
-	key_obj = json_object_object_get(jsobj, key);
-	subkey_obj = json_object_object_get(jsobj, subkey);
+	key_obj = json_object_object_get_ex(jsobj, key, &jsobj);
+	subkey_obj = json_object_object_get_ex(jsobj, subkey, &subkey_obj);
 	key_obj_value = json_object_get_string(key_obj);
 	subkey_obj_value = json_object_get_string(subkey_obj);
 
