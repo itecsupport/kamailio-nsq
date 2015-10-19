@@ -104,31 +104,31 @@ void query_handler(struct HttpRequest *req, struct HttpResponse *resp, void *arg
 	free_http_request(req);
 }
 
-static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
-	struct NSQMessage *msg, void *ctx)
-{
-	char buf[256];
-	int ret = 0;
+// static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
+// 	struct NSQMessage *msg, void *ctx)
+// {
+// 	char buf[256];
+// 	int ret = 0;
 
-	LM_ERR("message_handler called\n");
+// 	LM_ERR("message_handler called\n");
 
-	sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
-	ret = route_get(&event_rt, buf);
-	LM_ERR("Return from route_get is %d\n", ret);
-	nsqA.s = "funky";
-	nsq_reader_connect_to_nsqd(rdr, "12.0.0.100", 4150);
+// 	sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
+// 	ret = route_get(&event_rt, buf);
+// 	LM_ERR("Return from route_get is %d\n", ret);
+// 	nsqA.s = "funky";
+// 	nsq_reader_connect_to_nsqd(rdr, "12.0.0.100", 4150);
 
-	buffer_reset(conn->command_buf);
+// 	buffer_reset(conn->command_buf);
 
-	nsq_finish(conn->command_buf, msg->id);
-	buffered_socket_write_buffer(conn->bs, conn->command_buf);
+// 	nsq_finish(conn->command_buf, msg->id);
+// 	buffered_socket_write_buffer(conn->bs, conn->command_buf);
 
-	buffer_reset(conn->command_buf);
-	nsq_ready(conn->command_buf, rdr->max_in_flight);
-	buffered_socket_write_buffer(conn->bs, conn->command_buf);
+// 	buffer_reset(conn->command_buf);
+// 	nsq_ready(conn->command_buf, rdr->max_in_flight);
+// 	buffered_socket_write_buffer(conn->bs, conn->command_buf);
 
-	free_nsq_message(msg);
-}
+// 	free_nsq_message(msg);
+// }
 
 
 int
