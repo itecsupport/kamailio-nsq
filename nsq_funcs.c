@@ -140,6 +140,7 @@ nsqd_subscribe(int rank)
 	struct ev_loop *loop;
 	struct NSQReader *rdr;
 
+/*
         if (rank==PROC_INIT || rank==PROC_TCP_MAIN) {
 		LM_ERR("rank invalid, no forking, return\n");
                 return 0;
@@ -163,8 +164,9 @@ nsqd_subscribe(int rank)
 	} else {
 		LM_ERR("Unknown rank %d\n", rank);
 	}
+*/
 
-	sprintf(buf, "nsq:%s", consumer_topic.s);
+	sprintf(buf, "nsq-test:%s", consumer_topic.s);
 	LM_ERR("Getting route %s\n", buf);
 	ret = route_get(&event_rt, buf);
 	LM_ERR("Return from route_get is %d\n", ret);
