@@ -108,6 +108,11 @@ static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	free_nsq_message(msg);
 }
 
+int nsq_pv_get_event_payload(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	return eventData == NULL ? pv_get_null(msg, param, res) : pv_get_strzval(msg, param, res, eventData);
+}
+
 /* module child initialization function */
 int child_init(int rank)
 {
@@ -199,6 +204,8 @@ struct module_exports exports = {
 		0,	 				/* destroy function */
 		child_init       	/* per-child init function */
 };
+
+
 
 // static int fixup_get_field(void** param, int param_no)
 // {
