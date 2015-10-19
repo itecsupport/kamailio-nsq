@@ -6,7 +6,6 @@
 #include "../../cfg/cfg_struct.h"
 #include "../../lib/srdb1/db.h"
 
-#include "nsq_funcs.h"
 #include "nsq_pua.h"
 #include "nsq.h"
 
@@ -26,6 +25,7 @@ str knsq_db_url = {0,0};
 str knsq_presentity_table = str_init("presentity");
 db_func_t knsq_pa_dbf;
 db1_con_t *knsq_pa_db = NULL;
+char* eventData = NULL;
 
 str nsqA = {0, 0};
 str nsqE = {0, 0};
