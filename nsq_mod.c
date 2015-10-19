@@ -79,6 +79,34 @@ static int init(void)
 	return 0;
 }
 
+static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
+	struct NSQMessage *msg, void *ctx)
+{
+	char buf[256];
+	int route = 0;
+
+	LM_ERR("message_handler called\n");
+
+	//sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
+	sprintf(buf, "nsq-test:phone-registration")
+	route = route_get(&event_rt, buf);
+	LM_ERR("return from route_get is %d\n", route);
+	nsqA.s = "funky";
+	// Todo: Get the msg body into the exported variable: non-working example: nsqA.s = msg->body
+	
+
+	buffer_reset(conn->command_buf);
+
+	nsq_finish(conn->command_buf, msg->id);
+	buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+	buffer_reset(conn->command_buf);
+	nsq_ready(conn->command_buf, rdr->max_in_flight);
+	buffered_socket_write_buffer(conn->bs, conn->command_buf);
+
+	free_nsq_message(msg);
+}
+
 /* module child initialization function */
 int child_init(int rank)
 {
@@ -127,33 +155,7 @@ int child_init(int rank)
 	return 0;
 }
 
-static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
-	struct NSQMessage *msg, void *ctx)
-{
-	char buf[256];
-	int route = 0;
 
-	LM_ERR("message_handler called\n");
-
-	//sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
-	sprintf(buf, "nsq-test:phone-registration")
-	route = route_get(&event_rt, buf);
-	LM_ERR("return from route_get is %d\n", route);
-	nsqA.s = "funky";
-	// Todo: Get the msg body into the exported variable: non-working example: nsqA.s = msg->body
-	
-
-	buffer_reset(conn->command_buf);
-
-	nsq_finish(conn->command_buf, msg->id);
-	buffered_socket_write_buffer(conn->bs, conn->command_buf);
-
-	buffer_reset(conn->command_buf);
-	nsq_ready(conn->command_buf, rdr->max_in_flight);
-	buffered_socket_write_buffer(conn->bs, conn->command_buf);
-
-	free_nsq_message(msg);
-}
 
 /* Exported functions */
 // static cmd_export_t cmds[]={
