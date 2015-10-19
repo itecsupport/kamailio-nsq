@@ -6,7 +6,6 @@
 #include "../../cfg/cfg_struct.h"
 #include "../../lib/srdb1/db.h"
 
-#include "nsq_funcs.h"
 #include "nsq_pua.h"
 #include "nsq.h"
 
