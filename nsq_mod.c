@@ -139,23 +139,33 @@ int child_init(int rank)
 	// LM_ERR("child %d: Database connection opened successfully\n", rank);
 	// 
 	// nsqd_subscribe(rank);
+
+	if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
+		return 0;
+
+//	if (rank>PROC_MAIN)
+//		kz_cmd_pipe = kz_cmd_pipe_fds[1];
+
+
+	if (rank==PROC_MAIN) {
 	
-	char buf[256];
-	int ret;
-	void *ctx = NULL;
-	struct ev_loop *loop;
-	struct NSQReader *rdr;
+		char buf[256];
+		int ret;
+		void *ctx = NULL;
+		struct ev_loop *loop;
+		struct NSQReader *rdr;
 
-	sprintf(buf, "nsq-test:%s", consumer_topic.s);
-	LM_ERR("Getting route %s\n", buf);
-	ret = route_get(&event_rt, buf);
-	LM_ERR("Return from route_get is %d\n", ret);
+		sprintf(buf, "nsq-test:%s", consumer_topic.s);
+		LM_ERR("Getting route %s\n", buf);
+		ret = route_get(&event_rt, buf);
+		LM_ERR("Return from route_get is %d\n", ret);
 
-	loop = ev_default_loop(0);
-	rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
-		(void *)ctx, NULL, NULL, message_handler);
-	nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
-	nsq_run(loop);
+		loop = ev_default_loop(0);
+		rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
+			(void *)ctx, NULL, NULL, message_handler);
+		nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+		nsq_run(loop);
+	}
 
 
 	return 0;
