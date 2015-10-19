@@ -38,7 +38,7 @@ static int init(void)
 	}
 
 	knsq_db_url.len = knsq_db_url.s ? strlen(knsq_db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(knsq_db_url.s), knsq_db_url.len, knsq_db_url.s);
+	LM_ERR("db_url=%s/%d/%p\n", ZSW(knsq_db_url.s), knsq_db_url.len, knsq_db_url.s);
 	knsq_presentity_table.len = strlen(knsq_presentity_table.s);
 
 	if(knsq_db_url.len > 0) {
@@ -54,7 +54,7 @@ static int init(void)
 		if (!DB_CAPABILITY(knsq_pa_dbf, DB_CAP_ALL))
 		{
 			LM_ERR("Database module does not implement all functions"
-					" needed by kazoo module\n");
+					" needed by module\n");
 			return -1;
 		}
 
@@ -74,7 +74,7 @@ static int init(void)
 	register_procs(total_workers);
 	cfg_register_child(total_workers);
 
-	LM_DBG("nsq init() done");
+	LM_ERR("nsq init() done");
 
 	return 0;
 }
@@ -102,7 +102,7 @@ int child_init(int rank)
 		return -1;
 	}
 
-	LM_DBG("child %d: Database connection opened successfully\n", rank);
+	LM_ERR("child %d: Database connection opened successfully\n", rank);
 
 	nsqd_subscribe(rank);
 
