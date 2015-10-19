@@ -17,7 +17,7 @@ Vagrant.configure(2) do |config|
 
   config.vm.define "kamailio", primary: true do |v|
     # This box is Ubuntu 14.04 LTS with Salt pre-installed
-    v.vm.box = "inflection/ubuntu-1404-salt"
+    v.vm.box = "rubicon/ubuntu1404-salt"
 
     v.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--memory", "512"]
