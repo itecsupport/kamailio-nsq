@@ -201,7 +201,7 @@ static pv_export_t nsq_mod_pvs[] = {
 };
 
 struct module_exports exports = {
-		"nsq",
+		"nsq-test",
 		DEFAULT_DLFLAGS, 	/* dlopen flags */
 		0,			 	    /* Exported functions */
 		params,		 		/* Exported parameters */
