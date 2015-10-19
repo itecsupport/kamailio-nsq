@@ -8,6 +8,7 @@
 
 #include "nsq_funcs.h"
 #include "nsq_pua.h"
+#include "nsq.h"
 
 MODULE_VERSION
 
@@ -88,7 +89,7 @@ static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	LM_ERR("message_handler called\n");
 
 	//sprintf(buf, "%s:%s", consumer_channel.s, consumer_topic.s);
-	sprintf(buf, "nsq-test:phone-registration")
+	sprintf(buf, "nsq-test:phone-registration");
 	route = route_get(&event_rt, buf);
 	LM_ERR("return from route_get is %d\n", route);
 	nsqA.s = "funky";

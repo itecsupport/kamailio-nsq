@@ -1,1 +1,1 @@
-LIB_RPATH_LST:=/usr/local/lib64/kamailio/
+LIB_RPATH_LST:=/home/vagrant/dev/kamailio/lib/srdb2 /home/vagrant/dev/kamailio/lib/srdb1 /home/vagrant/dev/kamailio/lib/kmi /home/vagrant/dev/kamailio/lib/kcore
