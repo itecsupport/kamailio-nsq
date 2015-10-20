@@ -20,7 +20,8 @@ extern db1_con_t *knsq_pa_db;
 extern db_func_t knsq_pa_dbf;
 extern str knsq_presentity_table;
 
-int nsq_pua_update_presentity(str* event, str* realm, str* user, str* etag, str* sender, str* body, int expires, int reset)
+int
+nsq_pua_update_presentity(str* event, str* realm, str* user, str* etag, str* sender, str* body, int expires, int reset)
 {
 	db_key_t query_cols[12];
 	db_op_t  query_ops[12];
@@ -150,7 +151,9 @@ int nsq_pua_update_presentity(str* event, str* realm, str* user, str* etag, str*
 	return ret;
 }
 
-int nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj) {
+int
+nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj)
+{
 
 	struct json_object *obj;
 	int ret = 1;
@@ -390,7 +393,9 @@ int nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj) {
 }
 
 
-int nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj) {
+int
+nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj)
+{
     int ret = 1;
     struct json_object *obj;
     char *obj_name = NULL;
@@ -574,7 +579,9 @@ int nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj) {
 
 
 
-int nsq_pua_publish_presence_to_presentity(struct json_object *json_obj) {
+int
+nsq_pua_publish_presence_to_presentity(struct json_object *json_obj)
+{
     int ret = 1;
     str from = { 0, 0 }, to = { 0, 0 };
     str from_user = { 0, 0 }, to_user = { 0, 0 };
@@ -729,7 +736,9 @@ int nsq_pua_publish_presence_to_presentity(struct json_object *json_obj) {
 
 
 
-int nsq_pua_publish(struct sip_msg* msg, char *payload) {
+int
+nsq_pua_publish(struct sip_msg* msg, char *payload)
+{
 	struct json_object *json_obj = NULL, *obj = NULL;
 	struct json_tokener* tok;
 	char *obj_name = NULL, *jsonp= NULL;
@@ -788,6 +797,3 @@ int nsq_pua_publish(struct sip_msg* msg, char *payload) {
 
 	return ret;
 }
-
-
-

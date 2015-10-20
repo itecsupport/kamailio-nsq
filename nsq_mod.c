@@ -30,7 +30,8 @@ char* eventData = NULL;
 str nsqA = {0, 0};
 str nsqE = {0, 0};
 
-static int init(void)
+static int
+init(void)
 {
 	int ret = daemon_status_send(1);
 
@@ -48,7 +49,8 @@ static int init(void)
 	return 0;
 }
 
-static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
+static void
+message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	struct NSQMessage *msg, void *ctx)
 {
 	char buf[256];
@@ -75,13 +77,15 @@ static void message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	free_nsq_message(msg);
 }
 
-int nsq_pv_get_event_payload(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+int
+nsq_pv_get_event_payload(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
 	return eventData == NULL ? pv_get_null(msg, param, res) : pv_get_strzval(msg, param, res, eventData);
 }
 
 /* module child initialization function */
-int child_init(int rank)
+int
+child_init(int rank)
 {
 	if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
 		return 0;
