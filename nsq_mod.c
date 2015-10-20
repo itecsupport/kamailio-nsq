@@ -5,14 +5,12 @@
 #include "../../sr_module.h"
 #include "../../cfg/cfg_struct.h"
 #include "../../lib/srdb1/db.h"
+#include "../../daemonize.h"
 
 #include "nsq_pua.h"
 #include "nsq.h"
 
 MODULE_VERSION
-
-static int fixup_get_field(void** param, int param_no);
-static int fixup_get_field_free(void** param, int param_no);
 
 str lookupd_address = {0,0};
 str consumer_topic = {0,0};
@@ -44,7 +42,7 @@ init(void)
 	register_procs(total_workers);
 	cfg_register_child(total_workers);
 
-	LM_ERR("nsq init() done");
+	LM_ERR("nsq init() done\n");
 
 	return 0;
 }
@@ -53,27 +51,12 @@ static void
 message_handler(struct NSQReader *rdr, struct NSQDConnection *conn,
 	struct NSQMessage *msg, void *ctx)
 {
-	char buf[256];
-	int route = 0;
-
-	LM_ERR("message_handler called\n");
-
-	sprintf(buf, "nsq-test:phone-registration");
-	route = route_get(&event_rt, buf);
-	LM_ERR("return from route_get is %d\n", route);
-	nsqA.s = calloc(sizeof(char), msg->body_length+1);
-	memcpy(nsqA.s, msg->body, msg->body_length);
-	
-
 	buffer_reset(conn->command_buf);
-
 	nsq_finish(conn->command_buf, msg->id);
 	buffered_socket_write_buffer(conn->bs, conn->command_buf);
-
 	buffer_reset(conn->command_buf);
 	nsq_ready(conn->command_buf, rdr->max_in_flight);
 	buffered_socket_write_buffer(conn->bs, conn->command_buf);
-
 	free_nsq_message(msg);
 }
 
@@ -87,30 +70,19 @@ nsq_pv_get_event_payload(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 int
 child_init(int rank)
 {
-	if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
-		return 0;
+	void *ctx = NULL;
+	struct ev_loop *loop;
+	struct NSQReader *rdr;
 
-	if (rank==PROC_MAIN) {
-	
-		char buf[256];
-		int ret;
-		void *ctx = NULL;
-		struct ev_loop *loop;
-		struct NSQReader *rdr;
+	LM_ERR("child_init enter\n");
 
-		sprintf(buf, "nsq-test:%s", consumer_topic.s);
-		LM_ERR("Getting route %s\n", buf);
-		ret = route_get(&event_rt, buf);
-		LM_ERR("Return from route_get is %d\n", ret);
+	loop = ev_default_loop(0);
+	rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
+		(void *)ctx, NULL, NULL, message_handler);
+	nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+	nsq_run(loop);
 
-		loop = ev_default_loop(0);
-		rdr = new_nsq_reader(loop, consumer_topic.s, consumer_channel.s,
-			(void *)ctx, NULL, NULL, message_handler);
-		nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
-		nsq_run(loop);
-	}
-
-
+	LM_ERR("child_init leave\n");
 	return 0;
 }
 
@@ -133,7 +105,7 @@ static pv_export_t nsq_mod_pvs[] = {
 };
 
 struct module_exports exports = {
-		"nsq-test",
+		"nsq",
 		DEFAULT_DLFLAGS, 	/* dlopen flags */
 		0,			 	    /* Exported functions */
 		params,		 		/* Exported parameters */

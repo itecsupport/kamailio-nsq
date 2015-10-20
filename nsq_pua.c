@@ -14,6 +14,7 @@
 #include "../../sr_module.h"
 #include "../../cfg/cfg_struct.h"
 #include "../../lib/srdb1/db.h"
+#include "../../daemonize.h"
 
 
 extern db1_con_t *knsq_pa_db;
@@ -159,7 +160,7 @@ nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj)
 	int ret = 1;
 	str from = {0, 0}, to = {0, 0}, pres = {0, 0};
 	str from_user = {0, 0}, to_user = {0, 0}, pres_user = {0, 0};
-	str from_realm = {0, 0}, to_realm = {0, 0}, pres_realm = {0, 0};
+	str from_realm = {0, 0}, pres_realm = {0, 0};
 	str from_uri = {0, 0}, to_uri = {0, 0};
 	str callid = {0, 0}, fromtag = {0, 0}, totag = {0, 0};
 	str state = {0, 0};
@@ -181,135 +182,127 @@ nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj)
 		goto error;
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_PRES);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_PRES, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		pres.s = obj_name;
 		pres.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_PRES_USER);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_PRES_USER, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		pres_user.s = obj_name;
 		pres_user.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_PRES_REALM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_PRES_REALM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		pres_realm.s = obj_name;
 		pres_realm.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from.s = obj_name;
 		from.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_USER);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_USER, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_user.s = obj_name;
 		from_user.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_REALM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_REALM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_realm.s = obj_name;
 		from_realm.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_URI);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_URI, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_uri.s = obj_name;
 		from_uri.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_TO);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_TO, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		to.s = obj_name;
 		to.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_USER);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_TO_USER, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		to_user.s = obj_name;
 		to_user.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_REALM);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		to_realm.s = obj_name;
-		to_realm.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_URI);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_TO_URI, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		to_uri.s = obj_name;
 		to_uri.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_CALLID);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_CALLID, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		callid.s = obj_name;
 		callid.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROMTAG);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROMTAG, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		fromtag.s = obj_name;
 		fromtag.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_TOTAG);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_TOTAG, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		totag.s = obj_name;
 		totag.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_DIRECTION);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_DIRECTION, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		direction.s = obj_name;
 		direction.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_STATE);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_STATE, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		state.s = obj_name;
 		state.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_EXPIRES);
+	json_object_object_get_ex(json_obj, BLF_JSON_EXPIRES, &obj);
 	if (obj) {
 		expires = json_object_get_int(obj);
 		LM_ERR("%s:%d BLF_JSON_EXPIRES %d\n", __FUNCTION__, __LINE__, expires);
@@ -318,7 +311,7 @@ nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj)
 		LM_ERR("%s:%d BLF_JSON_EXPIRES %d\n", __FUNCTION__, __LINE__, expires);
 	}
 
-	obj = json_object_object_get(json_obj, "Flush-Level");
+	json_object_object_get_ex(json_obj, "Flush-Level", &obj);
 	if(obj != NULL) {
 		reset = json_object_get_int(obj);
 		LM_ERR("%s:%d Flush-Level %d\n", __FUNCTION__, __LINE__, reset);
@@ -399,14 +392,13 @@ nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj)
     int ret = 1;
     struct json_object *obj;
     char *obj_name = NULL;
-    str direction = {0, 0};
 
     str event = str_init("message-summary");
-    str from = { 0, 0 }, to = { 0, 0 };
-    str from_user = { 0, 0 }, to_user = { 0, 0 };
-    str from_realm = { 0, 0 }, to_realm = { 0, 0 };
-    str callid = { 0, 0 }, fromtag = { 0, 0 }, totag = { 0, 0 };
-    str mwi_user = { 0, 0 }, mwi_waiting = { 0, 0 },
+    str from = { 0, 0 };
+    str from_user = { 0, 0 };
+    str from_realm = { 0, 0 };
+    str callid = { 0, 0 };
+    str mwi_waiting = { 0, 0 },
         mwi_new = { 0, 0 }, mwi_saved = { 0, 0 },
         mwi_urgent = { 0, 0 }, mwi_urgent_saved = { 0, 0 },
         mwi_account = { 0, 0 }, mwi_body = { 0, 0 };
@@ -419,126 +411,78 @@ nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj)
     	goto error;
     }
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from.s = obj_name;
 		from.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_USER);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_USER, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_user.s = obj_name;
 		from_user.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_REALM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_REALM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_realm.s = obj_name;
 		from_realm.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_REALM %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_TO);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		to.s = obj_name;
-		to.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TO %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_USER);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		to_user.s = obj_name;
-		to_user.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TO_USER %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_REALM);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		to_realm.s = obj_name;
-		to_realm.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TO_REALM %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_CALLID);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_CALLID, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		callid.s = obj_name;
 		callid.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_CALLID %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROMTAG);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		fromtag.s = obj_name;
-		fromtag.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_FROMTAG %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_TOTAG);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		totag.s = obj_name;
-		totag.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TOTAG %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, MWI_JSON_TO);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		mwi_user.s = obj_name;
-		mwi_user.len = strlen(obj_name);
-		LM_ERR("%s:%d MWI_JSON_TO %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, MWI_JSON_WAITING);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, MWI_JSON_WAITING, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		mwi_waiting.s = obj_name;
 		mwi_waiting.len = strlen(obj_name);
 		LM_ERR("%s:%d MWI_JSON_WAITING %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, MWI_JSON_NEW);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, MWI_JSON_NEW, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		mwi_new.s = obj_name;
 		mwi_new.len = strlen(obj_name);
 		LM_ERR("%s:%d MWI_JSON_NEW %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, MWI_JSON_SAVED);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, MWI_JSON_SAVED, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		mwi_saved.s = obj_name;
 		mwi_saved.len = strlen(obj_name);
 		LM_ERR("%s:%d MWI_JSON_SAVED %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
-	obj = json_object_object_get(json_obj, MWI_JSON_URGENT);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, MWI_JSON_URGENT, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		mwi_urgent.s = obj_name;
 		mwi_urgent.len = strlen(obj_name);
 		LM_ERR("%s:%d MWI_JSON_URGENT %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, MWI_JSON_URGENT_SAVED);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, MWI_JSON_URGENT_SAVED, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		mwi_urgent_saved.s = obj_name;
 		mwi_urgent_saved.len = strlen(obj_name);
 		LM_ERR("%s:%d MWI_JSON_URGENT_SAVED %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
-	obj = json_object_object_get(json_obj, MWI_JSON_ACCOUNT);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, MWI_JSON_ACCOUNT, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		mwi_account.s = obj_name;
 		mwi_account.len = strlen(obj_name);
@@ -547,8 +491,8 @@ nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj)
 
 
 
-
-    struct json_object* ExpiresObj =  json_object_object_get(json_obj, BLF_JSON_EXPIRES);
+	struct json_object* ExpiresObj;
+	json_object_object_get_ex(json_obj, BLF_JSON_EXPIRES, &ExpiresObj);
     if(ExpiresObj != NULL) {
     	expires = json_object_get_int(ExpiresObj);
     	if(expires > 0)
@@ -583,12 +527,11 @@ int
 nsq_pua_publish_presence_to_presentity(struct json_object *json_obj)
 {
     int ret = 1;
-    str from = { 0, 0 }, to = { 0, 0 };
+    str from = { 0, 0 };
     str from_user = { 0, 0 }, to_user = { 0, 0 };
-    str from_realm = { 0, 0 }, to_realm = { 0, 0 };
-    str callid = { 0, 0 }, fromtag = { 0, 0 }, totag = { 0, 0 };
+    str from_realm = { 0, 0 };
+    str callid = { 0, 0 };
     str state = { 0, 0 };
-    str direction = { 0, 0 };
     str event = str_init("presence");
     str presence_body = { 0, 0 };
     str activity = str_init("");
@@ -606,82 +549,46 @@ nsq_pua_publish_presence_to_presentity(struct json_object *json_obj)
     }
 
 
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from.s = obj_name;
 		from.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_USER);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_USER, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_user.s = obj_name;
 		from_user.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
-	obj = json_object_object_get(json_obj, BLF_JSON_FROM_REALM);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_FROM_REALM, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		from_realm.s = obj_name;
 		from_realm.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_FROM_REALM %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_TO);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		to.s = obj_name;
-		to.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TO %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_USER);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_TO_USER, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		to_user.s = obj_name;
 		to_user.len = strlen(obj_name);
 		LM_ERR("%s:%d BLF_JSON_TO_USER %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
-	obj = json_object_object_get(json_obj, BLF_JSON_TO_REALM);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		to_realm.s = obj_name;
-		to_realm.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TO_REALM %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-	obj = json_object_object_get(json_obj, BLF_JSON_CALLID);
-	obj_name = json_object_get_string(obj);
+
+	json_object_object_get_ex(json_obj, BLF_JSON_CALLID, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		callid.s = obj_name;
 		callid.len = strlen(obj_name);;
 		LM_ERR("%s:%d BLF_JSON_CALLID %s\n", __FUNCTION__, __LINE__, obj_name);
 	}
-	obj = json_object_object_get(json_obj, BLF_JSON_FROMTAG);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		fromtag.s = obj_name;
-		fromtag.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_FROMTAG %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-	obj = json_object_object_get(json_obj, BLF_JSON_TOTAG);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		totag.s = obj_name;
-		totag.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_TOTAG %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
 
-	obj = json_object_object_get(json_obj, BLF_JSON_DIRECTION);
-	obj_name = json_object_get_string(obj);
-	if (obj_name) {
-		direction.s = obj_name;
-		direction.len = strlen(obj_name);
-		LM_ERR("%s:%d BLF_JSON_DIRECTION %s\n", __FUNCTION__, __LINE__, obj_name);
-	}
-
-	obj = json_object_object_get(json_obj, BLF_JSON_STATE);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_STATE, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 	if (obj_name) {
 		state.s = obj_name;
 		state.len = strlen(obj_name);
@@ -689,12 +596,12 @@ nsq_pua_publish_presence_to_presentity(struct json_object *json_obj)
 	}
 
 
-    struct json_object* ExpiresObj =  json_object_object_get(json_obj, BLF_JSON_EXPIRES);
-    if(ExpiresObj != NULL) {
-    	expires = json_object_get_int(ExpiresObj);
-    	if(expires > 0)
-    		expires += (int)time(NULL);
-    }
+	struct json_object* ExpiresObj;
+	if (json_object_object_get_ex(json_obj, BLF_JSON_EXPIRES, &ExpiresObj)) {
+		expires = json_object_get_int(ExpiresObj);
+		if(expires > 0)
+			expires += (int)time(NULL);
+	}
 
     if (!from_user.len || !to_user.len || !state.len) {
     	LM_ERR("missing one of From / To / State\n");
@@ -741,7 +648,7 @@ nsq_pua_publish(struct sip_msg* msg, char *payload)
 {
 	struct json_object *json_obj = NULL, *obj = NULL;
 	struct json_tokener* tok;
-	char *obj_name = NULL, *jsonp= NULL;
+	char *obj_name = NULL;
 	int ret = 1;
 	str json ;
 
@@ -759,25 +666,25 @@ nsq_pua_publish(struct sip_msg* msg, char *payload)
 	tok = json_tokener_new();
 	if (!tok) {
 		LM_ERR("Error parsing json: cpuld not allocate tokener\n");
-		return NULL;
+		return 0L;
 	}
 
 	json_obj = json_tokener_parse_ex(tok, json.s, json.len);
 	if (!json_obj) {
 		LM_ERR("%s: error parsing JSON\n", __FUNCTION__);
 		json_tokener_free(tok);
-		return;
+		return 0L;
 	}
 
 
-	obj = json_object_object_get(json_obj, BLF_JSON_EVENT_NAME);
-	obj_name = json_object_get_string(obj);
+	json_object_object_get_ex(json_obj, BLF_JSON_EVENT_NAME, &obj);
+	obj_name = (char*)json_object_get_string(obj);
 
 	if (obj_name) {
 		if (strlen(obj_name) == 6 && strncmp(obj_name, "update", 6) == 0) {
 			LM_ERR("%s: first obj_name %s\n", __FUNCTION__, obj_name);
-			obj = json_object_object_get(json_obj, BLF_JSON_EVENT_PKG);
-			obj_name = json_object_get_string(obj);
+			json_object_object_get_ex(json_obj, BLF_JSON_EVENT_PKG, &obj);
+			obj_name = (char*)json_object_get_string(obj);
 			if (obj_name) {
 				if (strlen(obj_name) == str_event_dialog.len
 						&& strncmp(obj_name, str_event_dialog.s, strlen(obj_name)) == 0) {
