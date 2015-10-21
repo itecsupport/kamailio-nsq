@@ -15,6 +15,8 @@ nsqd_connection_connect_cb(struct BufferedSocket *buffsock, void *arg)
 {
     struct NSQDConnection *conn = (struct NSQDConnection *)arg;
 
+    LM_ERR("connect cb\n");
+
     _DEBUG("%s: %p\n", __FUNCTION__, arg);
 
     // send magic
@@ -90,6 +92,8 @@ nsqd_connection_close_cb(struct BufferedSocket *buffsock, void *arg)
 
     _DEBUG("%s: %p\n", __FUNCTION__, arg);
 
+    LM_ERR("close cb\n");
+
     if (conn->close_callback) {
         conn->close_callback(conn, conn->arg);
     }
@@ -100,17 +104,25 @@ nsqd_connection_error_cb(struct BufferedSocket *buffsock, void *arg)
 {
     struct NSQDConnection *conn = (struct NSQDConnection *)arg;
 
+    LM_ERR("error cb\n");
+
     _DEBUG("%s: conn %p\n", __FUNCTION__, conn);
 }
 
 struct NSQDConnection*
-new_nsqd_connection(struct ev_loop *loop, const char *address, int port,
+new_nsqd_connection(struct ev_loop *_loop, const char *address, int port,
     void (*connect_callback)(struct NSQDConnection *conn, void *arg),
     void (*close_callback)(struct NSQDConnection *conn, void *arg),
     void (*msg_callback)(struct NSQDConnection *conn, struct NSQMessage *msg, void *arg),
     void *arg)
 {
     struct NSQDConnection *conn;
+    struct ev_loop *loop;
+
+    loop = _loop; // ev_loop_new(EVBACKEND_EPOLL | EVFLAG_NOENV);
+
+    LM_ERR("passed loop %p, set up loop %p\n", _loop, loop);
+    LM_ERR("Setting up conn for nsqd_connection\n");
 
     conn = (struct NSQDConnection *)malloc(sizeof(struct NSQDConnection));
     conn->command_buf = new_buffer(4096, 4096);
@@ -121,12 +133,13 @@ new_nsqd_connection(struct ev_loop *loop, const char *address, int port,
     conn->arg = arg;
     conn->loop = loop;
 
+    LM_ERR("Creating new buffered socket\n");
+
     conn->bs = new_buffered_socket(loop, address, port,
         nsqd_connection_connect_cb, nsqd_connection_close_cb,
         NULL, NULL, nsqd_connection_error_cb,
         conn);
-    ev_loop(loop, 0);
-
+    LM_ERR("returning conn\n");
     return conn;
 }
 

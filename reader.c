@@ -14,6 +14,8 @@ nsq_reader_connect_cb(struct NSQDConnection *conn, void *arg)
 {
     struct NSQReader *rdr = (struct NSQReader *)arg;
 
+    LM_ERR("reader connect cb\n");
+
     _DEBUG("%s: %p\n", __FUNCTION__, rdr);
 
     if (rdr->connect_callback) {
@@ -22,13 +24,18 @@ nsq_reader_connect_cb(struct NSQDConnection *conn, void *arg)
 
     // subscribe
     buffer_reset(conn->command_buf);
+    LM_ERR("subscribing\n");
     nsq_subscribe(conn->command_buf, rdr->topic, rdr->channel);
+    LM_ERR("writing buffer\n");
     buffered_socket_write_buffer(conn->bs, conn->command_buf);
 
     // send initial RDY
     buffer_reset(conn->command_buf);
+    LM_ERR("building ready\n");
     nsq_ready(conn->command_buf, rdr->max_in_flight);
+    LM_ERR("writing buffer\n");
     buffered_socket_write_buffer(conn->bs, conn->command_buf);
+    LM_ERR("Out of here\n");
 }
 
 static void
@@ -36,11 +43,13 @@ nsq_reader_msg_cb(struct NSQDConnection *conn, struct NSQMessage *msg, void *arg
 {
     struct NSQReader *rdr = (struct NSQReader *)arg;
 
-    _DEBUG("%s: %p %p\n", __FUNCTION__, msg, rdr);
+    LM_ERR("%s: %p %p\n", __FUNCTION__, msg, rdr);
 
     if (rdr->msg_callback) {
         msg->id[sizeof(msg->id)-1] = '\0';
         rdr->msg_callback(rdr, conn, msg, rdr->ctx);
+    } else {
+	LM_ERR("No msg_callback\n");
     }
 }
 
@@ -49,15 +58,19 @@ nsq_reader_close_cb(struct NSQDConnection *conn, void *arg)
 {
     struct NSQReader *rdr = (struct NSQReader *)arg;
 
-    _DEBUG("%s: %p\n", __FUNCTION__, rdr);
+    LM_ERR("%s: %p\n", __FUNCTION__, rdr);
 
     if (rdr->close_callback) {
         rdr->close_callback(rdr, conn);
+    } else {
+	LM_ERR("No close cb\n");
     }
 
     LL_DELETE(rdr->conns, conn);
 
+    LM_ERR("freeing connection\n");
     free_nsqd_connection(conn);
+    LM_ERR("connection freed\n");
 }
 
 void
@@ -118,11 +131,14 @@ new_nsq_reader(struct ev_loop *loop, const char *topic, const char *channel, voi
     rdr->lookupd = NULL;
     rdr->loop = loop;
 
+    LM_ERR("getting new http client\n");
     rdr->httpc = new_http_client(rdr->loop);
 
     // TODO: configurable interval
+    LM_ERR("init timer\n");
     ev_timer_init(&rdr->lookupd_poll_timer, nsq_reader_lookupd_poll_cb, 0., 5.);
     rdr->lookupd_poll_timer.data = rdr;
+    LM_ERR("timer again\n");
     ev_timer_again(rdr->loop, &rdr->lookupd_poll_timer);
     //ev_run(loop, 0);
 
@@ -134,6 +150,8 @@ free_nsq_reader(struct NSQReader *rdr)
 {
     struct NSQDConnection *conn;
     struct NSQLookupdEndpoint *nsqlookupd_endpoint;
+
+    LM_ERR("freeing nsq reader\n");
 
     if (rdr) {
         // TODO: this should probably trigger disconnections and then keep
@@ -155,6 +173,8 @@ nsq_reader_add_nsqlookupd_endpoint(struct NSQReader *rdr, const char *address, i
 {
     struct NSQLookupdEndpoint *nsqlookupd_endpoint;
 
+    LM_ERR("Adding endpoint\n");
+
     nsqlookupd_endpoint = new_nsqlookupd_endpoint(address, port);
     LL_APPEND(rdr->lookupd, nsqlookupd_endpoint);
 
@@ -167,20 +187,26 @@ nsq_reader_connect_to_nsqd(struct NSQReader *rdr, const char *address, int port)
     struct NSQDConnection *conn;
     int rc;
 
+    LM_ERR("Grabbing new nsqd connection\n");
+
     conn = new_nsqd_connection(rdr->loop, address, port,
         nsq_reader_connect_cb, nsq_reader_close_cb, nsq_reader_msg_cb, rdr);
+    LM_ERR("Actually connecting\n");
+
     rc = nsqd_connection_connect(conn);
     if (rc > 0) {
         LL_APPEND(rdr->conns, conn);
     } else {
 	LM_ERR("rc <= 0 (%d)\n", rc);
     }
+    LM_ERR("Returning code %d\n", rc);
     return rc;
 }
 
 void
 nsq_run(struct ev_loop *loop)
 {
+    LM_ERR("running loop\n");
     srand(time(NULL));
     ev_loop(loop, 0);
 }
