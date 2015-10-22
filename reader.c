@@ -25,6 +25,10 @@ nsq_reader_connect_cb(struct NSQDConnection *conn, void *arg)
     // subscribe
     buffer_reset(conn->command_buf);
     LM_ERR("subscribing\n");
+    /*
+    ** TODO : iterate over all topics/channels, and only subscribe to 
+    ** the ones that match local_hn.s
+    */
     nsq_subscribe(conn->command_buf, rdr->topic, rdr->channel);
     LM_ERR("writing buffer\n");
     buffered_socket_write_buffer(conn->bs, conn->command_buf);
