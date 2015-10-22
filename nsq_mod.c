@@ -250,7 +250,7 @@ void nsq_consumer_proc(int child_no, char *topic, char *channel)
     int port;
 
     loop = ev_default_loop(0);
-    rdr = new_nsq_reader(loop, "phone-registration", "nsq", (void *)ctx,
+    rdr = new_nsq_reader(loop, topic, channel, (void *)ctx,
         NULL, NULL, nsq_consumer_handler);
 	sscanf(nsqd_address.s, "%99[^:]:%99d", ip, &port);
     nsq_reader_add_nsqlookupd_endpoint(rdr, ip, port);
@@ -409,17 +409,6 @@ child_init(int rank)
 
 	i = 0;
 
-	/*
-	** TODO: only create a new reader for topics/channels we care about
-	** (those where the channel matches local_hn.s)
-	*/
-
-	/*
-	** Idea: find all topics, iterate over those. Look up channels for those
-	** topics, if the channel matches what we want, we register for the
-	** channel/topic in question.
-	*/
-
 	chunk.memory = malloc(1);
 	chunk.size = 0;
 	handle = curl_easy_init();
@@ -450,27 +439,7 @@ child_init(int rank)
 		}
 	}
 	curl_easy_cleanup(handle);
-
 	
-/*
-	LM_ERR("child_init enter\n");
-        LM_ERR("Setting up loop\n");
-        loop = ev_default_loop(0);
-        LM_ERR("Creating new reader for %s/%s\n", consumer_topic.s, "nsq");
-        rdr = new_nsq_reader(loop, "phone-registration", "nsq",
-                (void *)ctx, NULL, NULL, message_handler);
-        LM_ERR("Connecting to nsqd\n");
-        ret = nsq_reader_connect_to_nsqd(rdr, "127.0.0.1", 4151);
-        LM_ERR("connect to nsqd returned %d\n", ret);
-        LM_ERR("Adding new endpoint\n");
-        nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
-        LM_ERR("Running loop\n");
-        nsq_run(loop);
-
-        LM_ERR("Off looping\n");
-
-	LM_ERR("child_init leave\n");
-*/
 	return 0;
 }
 
