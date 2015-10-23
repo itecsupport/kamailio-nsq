@@ -117,11 +117,16 @@ void nsq_consumer_event(char *payload)
 	struct json_tokener *jstok;
 	char buffer[512];
 	char *p;
+
+	/*
+	** TODO : we need to parse the payload and use it's contents
+	** rather than use consumer_event.***
+	*/
 	char *key =  consumer_event_key.s ;
 	char *subkey = consumer_event_subkey.s;
 	const char *key_obj_value, *subkey_obj_value;
 
-	LM_ERR("Got a consumer event\n");
+	LM_ERR("Got a consumer event [%s]\n", payload);
 
 	eventData = payload;
 
@@ -138,6 +143,9 @@ void nsq_consumer_event(char *payload)
 	key_obj_value = json_object_get_string(key_obj);
 	subkey_obj_value = json_object_get_string(subkey_obj);
 
+	/*
+	** TODO : get rid of the nsq:* stuff and use flexible values
+	*/
 	if (key_obj_value && subkey_obj_value) {
 		sprintf(buffer, "nsq:consumer-event-%.*s-%.*s",
 				(int)strlen(key_obj_value), key_obj_value,
@@ -243,18 +251,18 @@ void nsq_consumer_handler(struct NSQReader *rdr, struct NSQDConnection *conn, st
 
 void nsq_consumer_proc(int child_no, char *topic, char *channel)
 {
-    struct NSQReader *rdr;
-    struct ev_loop *loop;
-    void *ctx = NULL;
-    char ip[20];
-    int port;
+	struct NSQReader *rdr;
+	struct ev_loop *loop;
+	void *ctx = NULL;
+	char ip[20];
+	int port;
 
-    loop = ev_default_loop(0);
-    rdr = new_nsq_reader(loop, topic, channel, (void *)ctx,
-        NULL, NULL, nsq_consumer_handler);
+	loop = ev_default_loop(0);
+	rdr = new_nsq_reader(loop, topic, channel, (void *)ctx,
+		NULL, NULL, nsq_consumer_handler);
 	sscanf(nsqd_address.s, "%99[^:]:%99d", ip, &port);
-    nsq_reader_add_nsqlookupd_endpoint(rdr, ip, port);
-    nsq_run(loop);
+	nsq_reader_add_nsqlookupd_endpoint(rdr, ip, port);
+	nsq_run(loop);
 
 	return;
 }
@@ -298,7 +306,7 @@ start_reader(char *topic, char *channel)
 
 
 void
-subscribe_all(json_object * jobj, char *hn, int port)
+subscribe_all(json_object *jobj, char *hn, int port)
 {
 	CURL *handle = curl_easy_init();
 	struct MemoryStruct chunk;
@@ -308,11 +316,24 @@ subscribe_all(json_object * jobj, char *hn, int port)
 	char *channel, *topic;
 	char buf[256];
 
-	exists = json_object_object_get_ex(jobj, "data", &obj);
-	if (!exists)
-		return;
+	LM_ERR("Entering %s\n", __FUNCTION__);
 
-	
+	exists = json_object_object_get_ex(jobj, "data", &obj2);
+	if (!exists) {
+		LM_ERR("No data found\n");
+		return;
+	} else {
+		LM_ERR("Found data key\n");
+	}
+
+	exists = json_object_object_get_ex(obj2, "topics", &obj);
+	if (!exists) {
+		LM_ERR("Can't find topics\n");
+		return;
+	} else {
+		LM_ERR("Found topics key\n");
+	}
+
 	json_object_object_foreach(obj, key, val) {
 		LM_ERR("key is %s\n", key);
 		type = json_object_get_type(val);
@@ -320,9 +341,17 @@ subscribe_all(json_object * jobj, char *hn, int port)
 		/*
 		** This should be a topic name, under the data root
 		*/
+
+
+		/*
+		** But it's not. It's an array that needs to be parsed.
+		*/
+
 		if (type == json_type_string) {
 			topic = (char*)json_object_get_string(obj);
+			LM_ERR("Looking for topic %s\n", topic);
 			snprintf(buf, 255, "http://%s:%d/channels?topic=%s", hn, port, topic);
+			LM_ERR("curling %s\n", buf);
 			curl_easy_setopt(handle, CURLOPT_URL, buf);
 			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, savebuf_cb);
 			curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void *)&chunk);
@@ -333,6 +362,7 @@ subscribe_all(json_object * jobj, char *hn, int port)
 				continue;
 			}
 			
+			LM_ERR("chunk has value %s\n", chunk.memory);
 			json_object *ch_obj = json_tokener_parse(chunk.memory);
 			exists = json_object_object_get_ex(ch_obj, "data", &obj2);
 			if (!exists) {
@@ -365,8 +395,12 @@ subscribe_all(json_object * jobj, char *hn, int port)
 				LM_ERR("I want to subscribe to %s/%s\n", topic, channel);
 				nsq_consumer_proc(++i, topic, channel);
 			}
+		} else {
+			LM_ERR("type is not string, but rather %d\n", (int)type);
 		}
 	}
+	LM_ERR("Out of json for loop\n");
+
 	curl_easy_cleanup(handle);
 }
 
@@ -380,20 +414,22 @@ child_init(int rank)
         int ret, pid, i, idx, count = 0;
 	char buf[256];
 
-	if (rank==PROC_INIT || rank==PROC_TCP_MAIN)
+	if (rank == PROC_INIT || rank == PROC_TCP_MAIN || rank != PROC_MAIN)
 		return 0;
 
+/*
 	if (rank==PROC_MAIN) {
 		pid=fork_process(2, "NSQ Consumer", 1);
 		LM_ERR("%s:%d, pid %d\n", __FUNCTION__, __LINE__, pid);
 		if (pid<0) {
 			LM_ERR("Can't fork\n");
-			return -1; /* error */
+			return -1;
 		} if(pid==0){
 			LM_ERR("Old way would start consumer proc\n");
 			// nsq_consumer_proc(1);
 		}
 	}
+*/
 
 /*
 	LL_FOREACH(rdr->lookupd, nsqlookupd_endpoint) {
