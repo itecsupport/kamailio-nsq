@@ -1,6 +1,10 @@
 #include "../../sr_module.h"
+#include "../../daemonize.h"
 
 #include "nsq.h"
+
+#include <sys/types.h>
+#include <sys/wait.h>
 
 MODULE_VERSION
     
@@ -72,12 +76,12 @@ static int
 init(void)
 {
     struct NSQReader *rdr;
-    struct ev_loop **loops;
     void *ctx = NULL;
+    struct ev_loop *loop = ev_default_loop(0);
     int j;
 
+#if 1
 	LM_ERR("Going over %d entries\n", (&event_rt)->entries);
-	loops = calloc(sizeof(struct ev_loop*), (&event_rt)->entries);
 
         for (j = 0; j < (&event_rt)->entries; j++) {
                 struct action* a = (&event_rt)->rlist[j];
@@ -87,13 +91,14 @@ init(void)
                 LM_ERR("Looking at route %s\n", a->rname);
                 while (a) {
                         char *cp1, *cp2, *cp3;
+
 			cp3 = strdup(a->rname);
                         cp1 = strchr(cp3, ':');
                         if (!cp1) {
 				LM_ERR("Can't find : in %s\n", a->rname);
                                 LM_ERR("Don't care about route %s\n", cp3);
 				free(cp3);
-                                break;
+                                a = a->next;
                         }
                         *cp1 = '\0';
                         cp1++;
@@ -101,14 +106,11 @@ init(void)
                         cp2 = cp3;
 			LM_ERR("cp2 = %s\n", cp2);
                         if (strcmp(cp2, default_channel.s) == 0) {
-				loops[j] = calloc(sizeof(struct ev_loop*), 1);
-				loops[j] = ev_default_loop(0);
-				struct ev_loop *loop = loops[j];
                                 LM_ERR("I want %s:%s\n", cp2, cp1);
-                                rdr = new_nsq_reader(loop, cp1, cp2, (void*)ctx,
-					NULL, NULL, message_handler);
+				LM_ERR("Creating reader\n");
+				rdr = new_nsq_reader(loop, cp1, cp2, (void*)ctx, NULL, NULL, message_handler);
+				LM_ERR("Creating new endpoint\n");
 				nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
-				nsq_run(loop);
                         } else {
                                 LM_ERR("Route %s:%s (%s) doesn't match %s\n", cp1, cp2, a->rname,
 					default_channel.s);
@@ -121,16 +123,27 @@ init(void)
 			LM_ERR("It's not, a->next is %p\n", a->next);
 		}
         }
+	nsq_run(loop);
 	LM_ERR("Final value of j is %d\n", j);
 
+#else
 
-/*
     struct ev_loop *loop = ev_default_loop(0);
-    rdr = new_nsq_reader(loop, "test", "ch", (void *)ctx,
-        NULL, NULL, message_handler);
+    struct ev_loop *loop2 = ev_default_loop(0);
+
+    LM_ERR("Going into 1st loop\n");
+    rdr = new_nsq_reader(loop, "test", "ch", (void*)ctx,
+	NULL, NULL, message_handler);
+    nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
+    // nsq_run(loop);
+
+    LM_ERR("Going into 2nd loop\n");
+    rdr = new_nsq_reader(loop, "test1", "ch", (void*)ctx,
+	NULL, NULL, message_handler);
     nsq_reader_add_nsqlookupd_endpoint(rdr, "127.0.0.1", 4161);
     nsq_run(loop);
-*/
+
+#endif
 
     return 0;
 }
