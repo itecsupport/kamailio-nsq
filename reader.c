@@ -140,7 +140,7 @@ new_nsq_reader(struct ev_loop *loop, const char *topic, const char *channel, voi
     rdr->lookupd_poll_timer.data = rdr;
     LM_ERR("timer again\n");
     ev_timer_again(rdr->loop, &rdr->lookupd_poll_timer);
-    LM_ERR("Running loop\n");
+    //LM_ERR("Running loop\n");
     //nsq_run(loop);
 
     LM_ERR("New NSQReader created\n");
