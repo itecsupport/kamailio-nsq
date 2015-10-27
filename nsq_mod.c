@@ -1,5 +1,6 @@
 #include "../../sr_module.h"
 #include "../../daemonize.h"
+#include "../../fmsg.h"
 
 #include "nsq.h"
 
@@ -68,10 +69,39 @@ nsq_pv_get_event_payload(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 		pv_get_strzval(msg, param, res, eventData);
 }
 
+int
+nsq_consumer_fire_event(char *routename)
+{
+        struct sip_msg *fmsg;
+        struct run_act_ctx ctx;
+        int rtb, rt;
+
+        rt = route_get(&event_rt, routename);
+        if (rt < 0 || event_rt.rlist[rt] == NULL)
+        {
+                LM_ERR("route %s does not exist\n", routename);
+                return -2;
+        }
+        if(faked_msg_init()<0)
+                return -2;
+        fmsg = faked_msg_next();
+        rtb = get_route_type();
+        set_route_type(REQUEST_ROUTE);
+        init_run_actions_ctx(&ctx);
+        run_top_route(event_rt.rlist[rt], fmsg, 0);
+        set_route_type(rtb);
+
+        return 0;
+}
+
 static void
 message_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct NSQMessage *msg, void *ctx)
 {
     int ret = 0;
+    char buf[256];
+
+    snprintf(buf, 255, "%s:%s", rdr->channel, rdr->topic);
+    ret = nsq_consumer_fire_event(buf);
 
     buffer_reset(conn->command_buf);
 
