@@ -21,6 +21,20 @@ struct module_exports exports = {
                 0 // child_init         /* per-child init function */
 };
 
+str default_ch = {0,0};
+str lookupd_address = {0,0};
+str consumer_topic = {0,0};
+str consumer_channel = {0,0}; 
+str nsqd_address = {0,0};
+str consumer_event_key = {0,0};
+str consumer_event_subkey = {0,0};
+/* database connection */
+str knsq_db_url = {0,0};
+str knsq_presentity_table = str_init("presentity");
+db_func_t knsq_pa_dbf;
+db1_con_t *knsq_pa_db = NULL;
+char* eventData = NULL;
+
 static void
 message_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct NSQMessage *msg, void *ctx)
 {

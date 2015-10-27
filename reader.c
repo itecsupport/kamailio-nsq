@@ -131,7 +131,7 @@ new_nsq_reader(struct ev_loop *loop, const char *topic, const char *channel, voi
     rdr->lookupd = NULL;
     rdr->loop = loop;
 
-    LM_ERR("getting new http client\n");
+    LM_ERR("getting new http client for %s/%s\n", topic, channel);
     rdr->httpc = new_http_client(rdr->loop);
 
     // TODO: configurable interval
@@ -140,8 +140,10 @@ new_nsq_reader(struct ev_loop *loop, const char *topic, const char *channel, voi
     rdr->lookupd_poll_timer.data = rdr;
     LM_ERR("timer again\n");
     ev_timer_again(rdr->loop, &rdr->lookupd_poll_timer);
-    //ev_run(loop, 0);
+    LM_ERR("Running loop\n");
+    //nsq_run(loop);
 
+    LM_ERR("New NSQReader created\n");
     return rdr;
 }
 
