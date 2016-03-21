@@ -38,20 +38,17 @@ MODULE_VERSION
 #define DBN_DEFAULT_NO_CONSUMERS 1
 #define DBN_DEFAULT_NO_WORKERS 8
 
-#define DEFAULT_CHANNEL "kamailio"
 #define LOOKUPD_ADDRESS "127.0.0.1"
 #define CONSUMER_EVENT_KEY "Event-Category"
 #define CONSUMER_EVENT_SUB_KEY "Event-Name"
 #define CONSUMER_CHANNEL "Kamailio-Channel"
 #define CONSUMER_TOPIC "Kamailio-Topic"
 #define NSQD_ADDRESS "127.0.0.1"
-#define NSQD_PORT ""
 #define PRESENTITY_TABLE "presentity"
 
 int nsq_workers = 1;
 int nsq_max_in_flight = 1;
 int consumer_use_nsqd = 0;
-str default_channel = str_init(DEFAULT_CHANNEL);
 str nsq_lookupd_address = str_init(LOOKUPD_ADDRESS);
 int lookupd_port = 4161;
 str nsq_event_key = str_init(CONSUMER_EVENT_KEY);
@@ -98,7 +95,7 @@ static pv_export_t nsq_mod_pvs[] = {
 };
 
 static cmd_export_t cmds[] = {
-    {"nsq_pua_publish", (cmd_function) nsq_pua_publish, 1, 0, 0, ANY_ROUTE},
+	{"nsq_pua_publish", (cmd_function) nsq_pua_publish, 1, 0, 0, ANY_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -107,7 +104,6 @@ static param_export_t params[]=
 	{"consumer_processes", INT_PARAM, &dbn_consumer_processes},
 	{"consumer_workers", INT_PARAM, &dbn_consumer_workers},
 	{"max_in_flight", INT_PARAM, &nsq_max_in_flight},
-	{"default_channel", PARAM_STR, &default_channel},
 	{"lookupd_address", PARAM_STR, &nsq_lookupd_address},
 	{"lookupd_port", INT_PARAM, &lookupd_port},
 	{"consumer_use_nsqd", INT_PARAM, &consumer_use_nsqd}, // consume messages from nsqd instead of lookupd
@@ -118,9 +114,9 @@ static param_export_t params[]=
 	{"consumer_event_key", PARAM_STR, &nsq_event_key},
 	{"consumer_event_subkey", PARAM_STR, &nsq_event_sub_key},
 	{"pua_include_entity", INT_PARAM, &dbn_include_entity},
-    {"presentity_table", PARAM_STR, &nsq_presentity_table},
+	{"presentity_table", PARAM_STR, &nsq_presentity_table},
 	{"db_url", PARAM_STR, &nsq_db_url},
-    {"pua_mode", INT_PARAM, &dbn_pua_mode},
+	{"pua_mode", INT_PARAM, &dbn_pua_mode},
 	{"json_escape_char", PARAM_STR, &nsq_json_escape_str},
 	{ 0, 0, 0 }
 };
@@ -151,17 +147,16 @@ static int fire_init_event(int rank)
 		return 0;
 
 	rt = route_get(&event_rt, "nsq:mod-init");
-	if(rt>=0 && event_rt.rlist[rt]!=NULL) {
+	if (rt>=0 && event_rt.rlist[rt]!=NULL) {
 		LM_DBG("executing event_route[nsq:mod-init] (%d)\n", rt);
-		if(faked_msg_init()<0)
+		if (faked_msg_init()<0)
 			return -1;
 		fmsg = faked_msg_next();
 		rtb = get_route_type();
 		set_route_type(REQUEST_ROUTE);
 		init_run_actions_ctx(&ctx);
 		run_top_route(event_rt.rlist[rt], fmsg, &ctx);
-		if(ctx.run_flags&DROP_R_F)
-		{
+		if (ctx.run_flags&DROP_R_F) {
 			LM_ERR("exit due to 'drop' in event route\n");
 			return -1;
 		}
@@ -174,7 +169,7 @@ static int fire_init_event(int rank)
 static int mod_init(void)
 {
 	int i;
-    startup_time = (int) time(NULL);
+	startup_time = (int) time(NULL);
 
 	if (dbn_pua_mode == 1) {
 		nsq_db_url.len = nsq_db_url.s ? strlen(nsq_db_url.s) : 0;
@@ -204,34 +199,34 @@ static int mod_init(void)
 			nsq_pa_dbf.close(nsq_pa_db);
 			nsq_pa_db = NULL;
 		}
-    }
+	}
 
 	int total_workers = dbn_consumer_workers + (dbn_consumer_processes * nsq_server_counter) + 2;
 
-    register_procs(total_workers);
-    cfg_register_child(total_workers);
+	register_procs(total_workers);
+	cfg_register_child(total_workers);
 
 	if (pipe(nsq_cmd_pipe_fds) < 0) {
 		LM_ERR("cmd pipe() failed\n");
 		return -1;
 	}
 
-    nsq_worker_pipes_fds = (int*) shm_malloc(sizeof(int) * (dbn_consumer_workers) * 2 );
-    nsq_worker_pipes = (int*) shm_malloc(sizeof(int) * dbn_consumer_workers);
-    for(i=0; i < dbn_consumer_workers; i++) {
-    	nsq_worker_pipes_fds[i*2] = nsq_worker_pipes_fds[i*2+1] = -1;
+	nsq_worker_pipes_fds = (int*) shm_malloc(sizeof(int) * (dbn_consumer_workers) * 2 );
+	nsq_worker_pipes = (int*) shm_malloc(sizeof(int) * dbn_consumer_workers);
+	for(i=0; i < dbn_consumer_workers; i++) {
+		nsq_worker_pipes_fds[i*2] = nsq_worker_pipes_fds[i*2+1] = -1;
 		if (pipe(&nsq_worker_pipes_fds[i*2]) < 0) {
 			LM_ERR("worker pipe(%d) failed\n", i);
 			return -1;
 		}
-    }
+	}
 
 	nsq_cmd_pipe = nsq_cmd_pipe_fds[1];
 	for(i=0; i < dbn_consumer_workers; i++) {
 		nsq_worker_pipes[i] = nsq_worker_pipes_fds[i*2+1];
 	}
 
-    return 0;
+	return 0;
 }
 
 int mod_register(char *path, int *dlflags, void *p1, void *p2)
@@ -266,7 +261,7 @@ int nsq_consumer_worker_proc(int cmd_pipe)
 	struct ev_loop *loop;
 	loop = ev_default_loop(0);
 	struct NSQReader *rdr;
-    void *ctx = NULL; //(void *)(new TestNsqMsgContext());
+	void *ctx = NULL; //(void *)(new TestNsqMsgContext());
 	static char channel[128];
 	static char topic[128];
 	static char address[128];
@@ -312,7 +307,7 @@ static int mod_child_init(int rank)
 			pid=fork_process(i+1, "NSQ Consumer Worker", 1);
 			if (pid<0)
 				return -1; /* error */
-			if(pid==0){
+			if (pid==0){
 				close(nsq_worker_pipes_fds[i*2+1]);
 				return(nsq_consumer_worker_proc(nsq_worker_pipes_fds[i*2]));
 
@@ -323,7 +318,7 @@ static int mod_child_init(int rank)
 	}
 
 	if (dbn_pua_mode == 1) {
-		if (nsq_pa_dbf.init==0) {
+		if (nsq_pa_dbf.init == 0) {
 			LM_CRIT("child_init: database not bound\n");
 			return -1;
 		}
@@ -348,6 +343,6 @@ static int mod_child_init(int rank)
  * destroy module function
  */
 static void mod_destroy(void) {
-    shm_free(nsq_worker_pipes_fds);
-    shm_free(nsq_worker_pipes);
+	shm_free(nsq_worker_pipes_fds);
+	shm_free(nsq_worker_pipes);
 }

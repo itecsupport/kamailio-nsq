@@ -40,22 +40,22 @@ modparam("nsq", "consumer_event_subkey", "Event-Name")
 
 event_route[nsq:consumer-event-presence-update]
 {
-# presence is the value extracted from Event-Type field in json payload 
-# update is the value extracted from Event-Name field in json payload 
+# presence is the value extracted from Event-Type field in json payload
+# update is the value extracted from Event-Name field in json payload
 xlog("L_INFO", "received $(kzE{kz.json,Event-Package}) update for $(kzE{kz.json,From})");
 ...
 }
 
 event_route[nsq:consumer-event-presence]
 {
-# presence is the value extracted from Event-Type field in json payload 
+# presence is the value extracted from Event-Type field in json payload
 xlog("L_INFO", "received $(kzE{kz.json,Event-Package}) update for $(kzE{kz.json,From})");
 ...
 }
 
 event_route[nsq:consumer-event]
 {
-# this event route is executed if we can't find the previous 
+# this event route is executed if we can't find the previous
 }
 
 ```
@@ -274,7 +274,7 @@ event_route[nsq:consumer-event-presence-update]
     xlog("L_INFO", "received $(nqE{nq.json,Event-Package}) update for $(nqE{nq.json,From})");
     nsq_pua_publish($kzE);
     pres_refresh_watchers("$(nqE{nq.json,From})", "$(nqE{nq.json,Event-Package})", 1);
-}  
+}
 ...
 ```
 
@@ -296,7 +296,7 @@ event_route[nsq:consumer-event-presence-update]
     xlog("L_INFO", "received $(nqE{nq.json,Event-Package}) update for $(nqE{nq.json,From})");
     nsq_pua_publish($nqE);
     pres_refresh_watchers("$(nqE{nq.json,From})", "$(nqE{nq.json,Event-Package})", 1);
-}  
+}
 ...
 ```
 

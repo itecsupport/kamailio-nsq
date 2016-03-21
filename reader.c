@@ -59,7 +59,7 @@ static void nsq_reader_lookupd_poll_cb(EV_P_ struct ev_timer *w, int revents)
     struct HttpRequest *req;
     int i, idx, count = 0;
     char buf[256];
-	
+
 	//LM_ERR("nsq_reader_lookupd_poll_cb()!\n");
 
     LL_FOREACH(rdr->lookupd, nsqlookupd_endpoint) {
@@ -106,7 +106,7 @@ struct NSQReader* new_nsq_reader(struct ev_loop *loop, const char *topic, const 
     rdr->loop = loop;
 
     rdr->httpc = new_http_client(rdr->loop);
-	
+
 	//LM_ERR("new_nsq_reader(), nsq_max_in_flight = %d!\n", nsq_max_in_flight);
 
     // TODO: configurable interval
@@ -121,7 +121,7 @@ void free_nsq_reader(struct NSQReader *rdr)
 {
     struct NSQDConnection *conn;
     struct NSQLookupdEndpoint *nsqlookupd_endpoint;
-	
+
 	//LM_ERR("free_nsq_reader()!\n");
 
     if (rdr) {

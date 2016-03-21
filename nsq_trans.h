@@ -12,8 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -31,7 +31,7 @@
 enum _nsq_tr_type { TR_NONE=0, TR_NSQ };
 enum _nsq_tr_subtype { TR_NSQ_NONE=0, TR_NSQ_ENCODE, TR_NSQ_JSON };
 
-char* nsq_tr_parse(str *in, trans_t *tr);
+char *nsq_tr_parse(str *in, trans_t *tr);
 
 int nsq_tr_init_buffers(void);
 void nsq_tr_clear_buffers(void);

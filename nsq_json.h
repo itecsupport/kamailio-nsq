@@ -12,8 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -27,19 +27,19 @@
 #include <json.h>
 
 #define json_extract_field(json_name, field)  do {                      \
-    struct json_object* obj =  nsq_json_get_object(json_obj, json_name); \
-    field.s = (char*)json_object_get_string(obj);                       \
-    if (field.s == NULL) {                                              \
-      LM_DBG("Json-c error - failed to extract field [%s]\n", json_name); \
-      field.s = "";                                                     \
-    } else {                                                            \
-      field.len = strlen(field.s);                                      \
-    }                                                                   \
-    LM_DBG("%s: [%s]\n", json_name, field.s?field.s:"Empty");           \
+	struct json_object* obj =  nsq_json_get_object(json_obj, json_name); \
+	field.s = (char*)json_object_get_string(obj);                       \
+	if (field.s == NULL) {                                              \
+	  LM_DBG("Json-c error - failed to extract field [%s]\n", json_name); \
+	  field.s = "";                                                     \
+	} else {                                                            \
+	  field.len = strlen(field.s);                                      \
+	}                                                                   \
+	LM_DBG("%s: [%s]\n", json_name, field.s?field.s:"Empty");           \
   } while (0);
 
 
-extern char nsq_json_escape_char; 
+extern char nsq_json_escape_char;
 extern str nsq_event_key;
 extern str nsq_event_sub_key;
 

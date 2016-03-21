@@ -12,8 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -130,8 +130,8 @@ char *nsq_tr_set_crt_buffer(void)
 		val->rs.s = _nsq_tr_buffer; \
 	} while(0);
 
-void nsq_destroy_pv_value(pv_value_t *val) {
-
+void nsq_destroy_pv_value(pv_value_t *val)
+{
 	if (val->flags & PV_VAL_PKG)
 		pkg_free(val->rs.s);
 	else if (val->flags & PV_VAL_SHM)
@@ -139,7 +139,8 @@ void nsq_destroy_pv_value(pv_value_t *val) {
 	pkg_free(val);
 }
 
-void nsq_free_pv_value(pv_value_t *val ) {
+void nsq_free_pv_value(pv_value_t *val )
+{
 	if (val->flags & PV_VAL_PKG)
 		pkg_free(val->rs.s);
 	else if (val->flags & PV_VAL_SHM)
@@ -154,9 +155,9 @@ pv_value_t* nsq_alloc_pv_value() {
 }
 
 #define KEY_SAFE(C)  ((C >= 'a' && C <= 'z') || \
-                      (C >= 'A' && C <= 'Z') || \
-                      (C >= '0' && C <= '9') || \
-                      (C == '-' || C == '~'  || C == '_'))
+					  (C >= 'A' && C <= 'Z') || \
+					  (C >= '0' && C <= '9') || \
+					  (C == '-' || C == '~'  || C == '_'))
 
 #define HI4(C) (C>>4)
 #define LO4(C) (C & 0x0F)
@@ -164,12 +165,12 @@ pv_value_t* nsq_alloc_pv_value() {
 #define hexint(C) (C < 10?('0' + C):('A'+ C - 10))
 
 char *nsq_amqp_util_encode(const str * key, char *dest) {
-    if ((key->len == 1) && (key->s[0] == '#' || key->s[0] == '*')) {
+	if ((key->len == 1) && (key->s[0] == '#' || key->s[0] == '*')) {
 		*dest++ = key->s[0];
 		return dest;
-    }
-    char *p, *end;
-    for (p = key->s, end = key->s + key->len; p < end; p++) {
+	}
+	char *p, *end;
+	for (p = key->s, end = key->s + key->len; p < end; p++) {
 		if (KEY_SAFE(*p)) {
 			*dest++ = *p;
 		} else if (*p == '.') {
@@ -182,9 +183,9 @@ char *nsq_amqp_util_encode(const str * key, char *dest) {
 			sprintf(dest, "%c%c", hexint(HI4(*p)), hexint(LO4(*p)));
 			dest += 2;
 		}
-    }
-    *dest = '\0';
-    return dest;
+	}
+	*dest = '\0';
+	return dest;
 }
 
 int nsq_amqp_encode_ex(str* unencoded, pv_value_p dst_val)
@@ -218,7 +219,7 @@ int nsq_tr_eval(struct sip_msg *msg, tr_param_t *tp, int subtype, pv_value_t *va
 	str sv;
 	pv_value_t* pv;
 	pv_value_t v;
-    str v2 = {0,0};
+	str v2 = {0,0};
 	void* v1 = NULL;
 
 	if (val==NULL || (val->flags&PV_VAL_NULL))
@@ -447,5 +448,3 @@ done:
 	t->name = name;
 	return p;
 }
-
-
