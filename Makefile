@@ -9,9 +9,9 @@ include ../../Makefile.defs
 
 auto_gen=
 NAME=nsq.so
-JLIB=json
+
 LIBS=-lnsq -lev -levbuffsock -lcurl -ljson-c
-DEFS+=-I$(LOCALBASE)/include -I/usr/local/include
+DEFS+=-I$(LOCALBASE)/include -I/usr/local/include $(shell pkg-config --cflags json-c)
 
 DEFS+=-DKAMAILIO_MOD_INTERFACE
 
