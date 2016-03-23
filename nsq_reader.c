@@ -119,13 +119,13 @@ int nsq_consumer_event(char *payload, char *channel, char *topic)
 void nsq_message_handler(struct NSQReader *rdr, struct NSQDConnection *conn, struct NSQMessage *msg, void *ctx)
 {
 	int ret = 0;
-	char *payload = NULL;
 
-	payload = (char *)pkg_malloc((int)msg->body_length);
+	char *payload = (char*)shm_malloc(msg->body_length + 1);
 	if (!payload) {
-		LM_ERR("No memory left\n");
+		LM_ERR("error allocating shared memory for str");
 	}
 	strncpy(payload, msg->body, msg->body_length);
+	payload[msg->body_length] = 0;
 
 	ret = nsq_consumer_event(payload, rdr->channel, rdr->topic);
 
@@ -143,5 +143,5 @@ void nsq_message_handler(struct NSQReader *rdr, struct NSQDConnection *conn, str
 	buffered_socket_write_buffer(conn->bs, conn->command_buf);
 
 	free_nsq_message(msg);
-	pkg_free(payload);
+	shm_free(payload);
 }

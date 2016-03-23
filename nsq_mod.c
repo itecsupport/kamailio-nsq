@@ -213,7 +213,7 @@ static int mod_init(void)
 
 	nsq_worker_pipes_fds = (int*) shm_malloc(sizeof(int) * (dbn_consumer_workers) * 2 );
 	nsq_worker_pipes = (int*) shm_malloc(sizeof(int) * dbn_consumer_workers);
-	for(i=0; i < dbn_consumer_workers; i++) {
+	for (i=0; i < dbn_consumer_workers; i++) {
 		nsq_worker_pipes_fds[i*2] = nsq_worker_pipes_fds[i*2+1] = -1;
 		if (pipe(&nsq_worker_pipes_fds[i*2]) < 0) {
 			LM_ERR("worker pipe(%d) failed\n", i);
@@ -222,7 +222,7 @@ static int mod_init(void)
 	}
 
 	nsq_cmd_pipe = nsq_cmd_pipe_fds[1];
-	for(i=0; i < dbn_consumer_workers; i++) {
+	for (i=0; i < dbn_consumer_workers; i++) {
 		nsq_worker_pipes[i] = nsq_worker_pipes_fds[i*2+1];
 	}
 
@@ -266,7 +266,7 @@ int nsq_consumer_worker_proc(int cmd_pipe)
 	static char topic[128];
 	static char address[128];
 
-	if (loop==NULL) {
+	if (loop == NULL) {
 		LM_ERR("cannot get libev loop\n");
 	}
 	set_non_blocking(cmd_pipe);

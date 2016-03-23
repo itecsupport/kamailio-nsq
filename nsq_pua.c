@@ -222,7 +222,7 @@ int nsq_pua_publish_presence_to_presentity(struct json_object *json_obj) {
 	json_extract_field(BLF_JSON_DIRECTION, direction);
 	json_extract_field(BLF_JSON_STATE, state);
 
-	struct json_object* ExpiresObj =  nsq_json_get_object(json_obj, BLF_JSON_EXPIRES);
+	struct json_object *ExpiresObj =  nsq_json_get_object(json_obj, BLF_JSON_EXPIRES);
 	if (ExpiresObj != NULL) {
 		expires = json_object_get_int(ExpiresObj);
 		if (expires > 0)
@@ -307,7 +307,7 @@ int nsq_pua_publish_mwi_to_presentity(struct json_object *json_obj) {
 	json_extract_field(MWI_JSON_URGENT_SAVED, mwi_urgent_saved);
 	json_extract_field(MWI_JSON_ACCOUNT, mwi_account);
 
-	struct json_object* ExpiresObj =  nsq_json_get_object(json_obj, BLF_JSON_EXPIRES);
+	struct json_object *ExpiresObj =  nsq_json_get_object(json_obj, BLF_JSON_EXPIRES);
 	if (ExpiresObj != NULL) {
 		expires = json_object_get_int(ExpiresObj);
 		if (expires > 0)
@@ -379,7 +379,7 @@ int nsq_pua_publish_dialoginfo_to_presentity(struct json_object *json_obj) {
 	json_extract_field(BLF_JSON_DIRECTION, direction);
 	json_extract_field(BLF_JSON_STATE, state);
 
-	struct json_object* ExpiresObj =  nsq_json_get_object(json_obj, BLF_JSON_EXPIRES);
+	struct json_object *ExpiresObj =  nsq_json_get_object(json_obj, BLF_JSON_EXPIRES);
 	if (ExpiresObj != NULL) {
 		expires = json_object_get_int(ExpiresObj);
 		if (expires > 0)
