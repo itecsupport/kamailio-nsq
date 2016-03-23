@@ -164,7 +164,7 @@ pv_value_t* nsq_alloc_pv_value() {
 
 #define hexint(C) (C < 10?('0' + C):('A'+ C - 10))
 
-char *nsq_amqp_util_encode(const str * key, char *dest) {
+char *nsq_util_encode(const str * key, char *dest) {
 	if ((key->len == 1) && (key->s[0] == '#' || key->s[0] == '*')) {
 		*dest++ = key->s[0];
 		return dest;
@@ -188,11 +188,11 @@ char *nsq_amqp_util_encode(const str * key, char *dest) {
 	return dest;
 }
 
-int nsq_amqp_encode_ex(str* unencoded, pv_value_p dst_val)
+int nsq_encode_ex(str* unencoded, pv_value_p dst_val)
 {
 	char routing_key_buff[256];
 	memset(routing_key_buff,0, sizeof(routing_key_buff));
-	nsq_amqp_util_encode(unencoded, routing_key_buff);
+	nsq_util_encode(unencoded, routing_key_buff);
 
 	int len = strlen(routing_key_buff);
 	dst_val->rs.s = pkg_malloc(len+1);
@@ -228,7 +228,7 @@ int nsq_tr_eval(struct sip_msg *msg, tr_param_t *tp, int subtype, pv_value_t *va
 
 	nsq_tr_set_crt_buffer();
 
-	switch(subtype) {
+	switch (subtype) {
 		case TR_NSQ_ENCODE:
 			if (!(val->flags&PV_VAL_STR))
 				return -1;
@@ -239,7 +239,7 @@ int nsq_tr_eval(struct sip_msg *msg, tr_param_t *tp, int subtype, pv_value_t *va
 				return -1;
 			}
 
-			if (nsq_amqp_encode_ex(&val->rs, pv ) != 1) {
+			if (nsq_encode_ex(&val->rs, pv ) != 1) {
 				LM_ERR("error encoding value\n");
 				nsq_destroy_pv_value(pv);
 				return -1;
