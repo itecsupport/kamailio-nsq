@@ -12,7 +12,7 @@
 <chapter xmlns:xi="http://www.w3.org/2001/XInclude">
 	<title>&adminguide;</title>
 
-    
+
     <section>
     <title>Overview</title>
     <para> The NSQ module an NSQ consumer. It exposes only consume capabilities into Kamailio.
@@ -51,7 +51,7 @@ The NSQ module also has support to publish updates to presence module through th
 </section>
     <section>
     <title>How it works</title>
-<para>  
+<para>
 The module works with a main forked process that does the communication with NSQ for consuming messages. When it consumes a message it defers the process to a worker process so that it doesn't block this main process.
 </para>
     <section>
@@ -60,7 +60,7 @@ The module works with a main forked process that does the communication with NSQ
 The worker process issues an event-route where we can act on the received payload. The name of the event-route is composed by values extracted from the payload.
     </para>
     <para>
-    NSQ module will try to execute the event route from most significant to less significant. 
+    NSQ module will try to execute the event route from most significant to less significant.
     define the event route like event_route[nsq:consumer-event[-payload_key_value[-payload_subkey_value]]]
     </para>
     <para>
@@ -76,15 +76,15 @@ modparam("nsq", "consumer_event_sub_key", "Event-Name")
 
 event_route[nsq:consumer-event-presence-update]
 {
-# presence is the value extracted from Event-Category field in json payload 
-# update is the value extracted from Event-Name field in json payload 
+# presence is the value extracted from Event-Category field in json payload
+# update is the value extracted from Event-Name field in json payload
 xlog("L_INFO", "received $(nsqE{nsq.json,Event-Package}) update for $(nsqE{kznsqjson,From})");
 ...
 }
 
 event_route[nsq:consumer-event-presence]
 {
-# presence is the value extracted from Event-Category field in json payload 
+# presence is the value extracted from Event-Category field in json payload
 xlog("L_INFO", "received $(nsqE{nsq.json,Event-Package}) update for $(nsqE{nsq.json,From})");
 ...
 }
@@ -93,20 +93,20 @@ event_route[nsq:consumer-event-event-category-event-name]
 {
 # event-category is the name of the consumer_event_key parameter
 # event-name is the name of the consumer_event_sub_key parameter
-# this event route is executed if we can't find the previous 
+# this event route is executed if we can't find the previous
 ...
 }
 
 event_route[nsq:consumer-event-event-category]
 {
 # event-category is the name of the consumer_event_key parameter
-# this event route is executed if we can't find the previous 
+# this event route is executed if we can't find the previous
 ...
 }
 
 event_route[nsq:consumer-event]
 {
-# this event route is executed if we can't find the previous 
+# this event route is executed if we can't find the previous
 }
 
 </programlisting>
@@ -119,18 +119,18 @@ Consumed messages have the option of being acknowledge in two ways:
 <itemizedlist>
 <listitem>
 <para>
-immediately when received 
+immediately when received
 </para>
 </listitem>
 <listitem>
 <para>
-after processing by the worker 
+after processing by the worker
 </para>
 </listitem>
 </itemizedlist>
 
     </para>
-    
+
 </section>
     </section>
 
@@ -176,8 +176,8 @@ after processing by the worker
 
         </section>
     </section>
-    
-    
+
+
     <section>
     <title>Parameters</title>
     <section>
@@ -251,7 +251,7 @@ modparam("nsq", "nsqd_port", 4150)
 </programlisting>
         </example>
     </section>
-	
+
 	<section>
         <title><varname>consumer_use_nsqd</varname>(int)</title>
         <para>
@@ -324,37 +324,38 @@ modparam("nsq", "max_in_flight", 2)
         </example>
     </section>
 
-    <section>
-        <title><varname>consumer_topic</varname>(str)</title>
-        <para>
-        The NSQ Topic
-        </para>
-        <para>
-        <emphasis>Default value is <quote>Kamailio-Topic</quote>.</emphasis>
-        </para>		
-        <example>
-        <title>Set <varname>consumer_topic</varname> parameter</title>
-        <programlisting format="linespecific">
-...
-modparam("nsq", "consumer_topic", "My-NSQ-Topic")
-...
-</programlisting>
-        </example>
-    </section>
-
 	<section>
-        <title><varname>consumer_channel</varname>(str)</title>
+        <title><varname>consumer_workers</varname>(int)</title>
         <para>
-        The NSQ Channel
+        Number of consumer connections to NSQ per topic_channel.
         </para>
         <para>
-        <emphasis>Default value is <quote>Kamailio-Channel</quote>.</emphasis>
-        </para>		
+        <emphasis>Default value is 4.</emphasis>
+        </para>
         <example>
-        <title>Set <varname>consumer_channel</varname> parameter</title>
+        <title>Set <varname>consumer_workers</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("nsq", "consumer_channel", "My-NSQ-Channel")
+modparam("nsq", "consumer_workers", 2)
+...
+</programlisting>
+        </example>
+    </section>
+
+    <section>
+        <title><varname>topic_channel</varname>(str)</title>
+        <para>
+        The NSQ Topic and Channel. Delimiter-separated by <quote>:</quote>. It be set multiple times to subscribe to multiple topics and channels. The value of consumer_workers is allocated per topic_channel.
+        </para>
+        <para>
+        <emphasis>Default value is <quote>Kamailio-Topic:Kamailio-Channel</quote>.</emphasis>
+        </para>
+        <example>
+        <title>Set <varname>topic_channel</varname> parameter</title>
+        <programlisting format="linespecific">
+...
+modparam("nsq", "topic_channel", "My-NSQ-Topic:My-NSQ-Channel")
+modparam("nsq", "topic_channel", "My-NSQ-Topic-2:My-NSQ-Channel-2")
 ...
 </programlisting>
         </example>
@@ -363,7 +364,7 @@ modparam("nsq", "consumer_channel", "My-NSQ-Channel")
     </section>
 
 
-	
+
     <section>
     <title>presence related</title>
     <section>
@@ -404,17 +405,17 @@ modparam("nsq", "presentity_table", "my_presentity_table")
         </example>
     </section>
 
-    
+
     </section>
-    
-    
-    
 
 
-</section>    
+
+
+
+</section>
 <section>
     <title>Functions</title>
-    
+
     <section>
     <title>presence related</title>
     <section>
@@ -437,17 +438,17 @@ event_route[nsq:consumer-event-presence-update]
     xlog("L_INFO", "received $(nsqE{nsq.json,Event-Package}) update for $(nsqE{nsq.json,From})");
     nsq_pua_publish($nsqE);
     pres_refresh_watchers("$(nsqE{nsq.json,From})", "$(nsqE{nsq.json,Event-Package})", 1);
-}    
+}
 ...
 </programlisting>
         </example>
     </section>
 
-    
+
 </section>
 
 </section>
-    
+
         <section>
         <title>Exported pseudo-variables</title>
         <itemizedlist>
@@ -459,7 +460,7 @@ event_route[nsq:consumer-event-presence-update]
             </listitem>
         </itemizedlist>
     </section>
-    
+
         <section>
         <title>Transformations</title>
         <para>The prefix for nsq transformations is nsq.</para>
@@ -480,12 +481,12 @@ if($du != $null) {
 ...
 </programlisting>
         </example>
-            
+
             </listitem>
 
         </itemizedlist>
     </section>
-    
+
 
 </chapter>
 
