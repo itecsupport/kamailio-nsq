@@ -122,7 +122,7 @@ void nsq_message_handler(struct NSQReader *rdr, struct NSQDConnection *conn, str
 
 	char *payload = (char*)shm_malloc(msg->body_length + 1);
 	if (!payload) {
-		LM_ERR("error allocating shared memory for str");
+		LM_ERR("error allocating shared memory for payload");
 	}
 	strncpy(payload, msg->body, msg->body_length);
 	payload[msg->body_length] = 0;

@@ -148,7 +148,7 @@ void nsq_free_pv_value(pv_value_t *val )
 }
 
 pv_value_t* nsq_alloc_pv_value() {
-	pv_value_t* v = (pv_value_t*) pkg_malloc(sizeof(pv_value_t));
+	pv_value_t *v = (pv_value_t*) pkg_malloc(sizeof(pv_value_t));
 	if (v != NULL)
 		memset(v, 0, sizeof(pv_value_t));
 	return v;
@@ -188,14 +188,14 @@ char *nsq_util_encode(const str * key, char *dest) {
 	return dest;
 }
 
-int nsq_encode_ex(str* unencoded, pv_value_p dst_val)
+int nsq_encode_ex(str *unencoded, pv_value_p dst_val)
 {
 	char routing_key_buff[256];
 	memset(routing_key_buff,0, sizeof(routing_key_buff));
 	nsq_util_encode(unencoded, routing_key_buff);
 
 	int len = strlen(routing_key_buff);
-	dst_val->rs.s = pkg_malloc(len+1);
+	dst_val->rs.s = pkg_malloc(len + 1);
 	memcpy(dst_val->rs.s, routing_key_buff, len);
 	dst_val->rs.s[len] = '\0';
 	dst_val->rs.len = len;
@@ -217,7 +217,7 @@ int nsq_tr_eval(struct sip_msg *msg, tr_param_t *tp, int subtype, pv_value_t *va
 {
 
 	str sv;
-	pv_value_t* pv;
+	pv_value_t *pv;
 	pv_value_t v;
 	str v2 = {0,0};
 	void* v1 = NULL;
