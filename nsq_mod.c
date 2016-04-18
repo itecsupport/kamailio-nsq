@@ -24,65 +24,9 @@
  * 2016-03  first version (Weave Communications)
  */
 
-#include <sys/types.h>
-#include <sys/wait.h>
-
-#include "../../cfg/cfg_struct.h"
-#include "../../lib/srdb1/db.h"
-#include "nsq_reader.h"
-#include "nsq_trans.h"
-#include "nsq_pua.h"
+#include "nsq_mod.h"
 
 MODULE_VERSION
-
-#define DBN_DEFAULT_NO_CONSUMERS 1
-#define DBN_DEFAULT_NO_WORKERS 8
-
-#define LOOKUPD_ADDRESS "127.0.0.1"
-#define CONSUMER_EVENT_KEY "Event-Category"
-#define CONSUMER_EVENT_SUB_KEY "Event-Name"
-#define CONSUMER_CHANNEL "Kamailio-Channel"
-#define CONSUMER_TOPIC "Kamailio-Topic"
-#define NSQD_ADDRESS "127.0.0.1"
-#define PRESENTITY_TABLE "presentity"
-
-int nsq_workers = 1;
-int nsq_max_in_flight = 1;
-int consumer_use_nsqd = 0;
-str nsq_lookupd_address = str_init(LOOKUPD_ADDRESS);
-int lookupd_port = 4161;
-str nsq_event_key = str_init(CONSUMER_EVENT_KEY);
-str nsq_event_sub_key = str_init(CONSUMER_EVENT_SUB_KEY);
-str nsq_channel = str_init(CONSUMER_CHANNEL);
-str nsq_topic = str_init(CONSUMER_TOPIC);
-str nsqd_address = str_init(NSQD_ADDRESS);
-int nsqd_port = 4150;
-int dbn_pua_mode = 1;
-int dbn_include_entity = 1;
-
-str nsq_json_escape_str = str_init("%");
-char nsq_json_escape_char = '%';
-
-int nsq_server_counter = 0;
-int dbn_consumer_processes = DBN_DEFAULT_NO_CONSUMERS;
-int dbn_consumer_workers = DBN_DEFAULT_NO_WORKERS;
-int startup_time = 0;
-int *nsq_worker_pipes_fds = NULL;
-int *nsq_worker_pipes = NULL;
-int nsq_cmd_pipe = 0;
-int nsq_cmd_pipe_fds[2] = {-1,-1};
-
-/* database connection */
-db1_con_t *nsq_pa_db = NULL;
-db_func_t nsq_pa_dbf;
-str nsq_presentity_table = str_init(PRESENTITY_TABLE);
-str nsq_db_url = {NULL, 0};
-
-static int mod_init(void);
-static int mod_child_init(int);
-static void mod_destroy(void);
-
-int nsq_pv_get_event_payload(struct sip_msg*, pv_param_t*, pv_value_t*);
 
 static tr_export_t mod_trans[] = {
 	{ {"nsq", sizeof("nsq")-1}, nsq_tr_parse},
@@ -101,14 +45,12 @@ static cmd_export_t cmds[] = {
 
 static param_export_t params[]=
 {
-	{"consumer_processes", INT_PARAM, &dbn_consumer_processes},
 	{"consumer_workers", INT_PARAM, &dbn_consumer_workers},
 	{"max_in_flight", INT_PARAM, &nsq_max_in_flight},
 	{"lookupd_address", PARAM_STR, &nsq_lookupd_address},
 	{"lookupd_port", INT_PARAM, &lookupd_port},
 	{"consumer_use_nsqd", INT_PARAM, &consumer_use_nsqd}, // consume messages from nsqd instead of lookupd
-	{"consumer_channel", PARAM_STR, &nsq_channel},
-	{"consumer_topic", PARAM_STR, &nsq_topic},
+	{"topic_channel", PARAM_STRING|USE_FUNC_PARAM, (void*)nsq_add_topic_channel},
 	{"nsqd_address", PARAM_STR, &nsqd_address},
 	{"nsqd_port", INT_PARAM, &nsqd_port},
 	{"consumer_event_key", PARAM_STR, &nsq_event_key},
@@ -120,6 +62,54 @@ static param_export_t params[]=
 	{"json_escape_char", PARAM_STR, &nsq_json_escape_str},
 	{ 0, 0, 0 }
 };
+
+static void free_tc_list(nsq_topic_channel_t *tcl)
+{
+	nsq_topic_channel_t *tc, *prev_tc;
+	tc = tcl;
+	while (tc) {
+		prev_tc = tc;
+		tc = tc->next;
+		free(tc->topic);
+		free(tc->channel);
+		pkg_free(prev_tc);
+	}
+	tcl = NULL;
+}
+
+static int nsq_add_topic_channel(modparam_t type, void *val)
+{
+	nsq_topic_channel_t* tc;
+	size_t size;
+	char *channel = (char*)val;
+	char *topic;
+	char *sep = NULL;
+
+	sep = strchr(channel, ':');
+	if (!sep) {
+		topic = (char*)val;
+		channel = DEFAULT_CHANNEL;
+		LM_ERR("delimiter (\":\") not found inside topic_channel param, using default channel [%s]\n", channel);
+	} else {
+		topic = strsep(&channel, ":");
+	}
+	size = sizeof(nsq_topic_channel_t);
+	tc = (nsq_topic_channel_t*)pkg_malloc(size);
+	if (tc == NULL) {
+		LM_ERR("memory error!\n");
+		free_tc_list(tc_list);
+		return -1;
+	}
+	memset(tc, 0, size);
+	tc->topic = strdup(topic);
+	tc->channel = strdup(channel);
+	++nsq_topic_channel_counter;
+
+	tc->next = tc_list;
+	tc_list = tc;
+
+	return 0;
+}
 
 struct module_exports exports = {
 	"nsq",
@@ -201,7 +191,14 @@ static int mod_init(void)
 		}
 	}
 
-	int total_workers = dbn_consumer_workers + (dbn_consumer_processes * nsq_server_counter) + 2;
+	LM_DBG("NSQ Workers per Topic/Channel: %d\n", dbn_consumer_workers);
+	if (!nsq_topic_channel_counter) {
+		nsq_topic_channel_counter = 1;
+	}
+	LM_DBG("NSQ Total Topic/Channel: %d\n", nsq_topic_channel_counter);
+	dbn_consumer_workers = dbn_consumer_workers * nsq_topic_channel_counter;
+	LM_DBG("NSQ Total Workers: %d\n", dbn_consumer_workers);
+	int total_workers = dbn_consumer_workers + 2;
 
 	register_procs(total_workers);
 	cfg_register_child(total_workers);
@@ -256,14 +253,12 @@ int set_non_blocking(int fd)
 /**
  *
  */
-int nsq_consumer_worker_proc(int cmd_pipe)
+int nsq_consumer_worker_proc(int cmd_pipe, char *topic, char *channel)
 {
 	struct ev_loop *loop;
 	loop = ev_default_loop(0);
 	struct NSQReader *rdr;
 	void *ctx = NULL; //(void *)(new TestNsqMsgContext());
-	static char channel[128];
-	static char topic[128];
 	static char address[128];
 
 	if (loop == NULL) {
@@ -271,9 +266,7 @@ int nsq_consumer_worker_proc(int cmd_pipe)
 	}
 	set_non_blocking(cmd_pipe);
 
-	snprintf(channel, 128, "%.*s", nsq_channel.len, nsq_channel.s);
-	snprintf(topic, 128, "%.*s", nsq_topic.len, nsq_topic.s);
-
+	LM_DBG("NSQ Worker connecting to NSQ Topic [%s] and NSQ Channel [%s]\n", topic, channel);
 	// setup the reader
 	rdr = new_nsq_reader(loop, topic, channel, (void *)ctx, NULL, NULL, nsq_message_handler);
 
@@ -296,6 +289,7 @@ static int mod_child_init(int rank)
 {
 	int pid;
 	int i;
+	int workers = dbn_consumer_workers / nsq_topic_channel_counter;
 
 	fire_init_event(rank);
 
@@ -303,14 +297,32 @@ static int mod_child_init(int rank)
 		return 0;
 
 	if (rank==PROC_MAIN) {
-		for(i=0; i < dbn_consumer_workers; i++) {
-			pid=fork_process(i+1, "NSQ Consumer Worker", 1);
-			if (pid<0)
-				return -1; /* error */
-			if (pid==0){
-				close(nsq_worker_pipes_fds[i*2+1]);
-				return(nsq_consumer_worker_proc(nsq_worker_pipes_fds[i*2]));
+		nsq_topic_channel_t *tc;
 
+		tc = tc_list;
+		if (tc == NULL) {
+			LM_ERR("topic and channel not set, using defaults\n");
+			for(i = 0; i < workers; i++) {
+				pid=fork_process(i+1, "NSQ Consumer Worker", 1);
+				if (pid<0)
+					return -1; /* error */
+				if (pid==0){
+					close(nsq_worker_pipes_fds[i*2+1]);
+					return(nsq_consumer_worker_proc(nsq_worker_pipes_fds[i*2], DEFAULT_TOPIC, DEFAULT_CHANNEL));
+				}
+			}
+		} else {
+			while (tc) {
+				for(i = 0; i < workers; i++) {
+					pid=fork_process(i+1, "NSQ Consumer Worker", 1);
+					if (pid<0)
+						return -1; /* error */
+					if (pid==0){
+						close(nsq_worker_pipes_fds[i*2+1]);
+						return(nsq_consumer_worker_proc(nsq_worker_pipes_fds[i*2], tc->topic, tc->channel));
+					}
+				}
+				tc = tc->next;
 			}
 		}
 
@@ -343,6 +355,7 @@ static int mod_child_init(int rank)
  * destroy module function
  */
 static void mod_destroy(void) {
+	free_tc_list(tc_list);
 	shm_free(nsq_worker_pipes_fds);
 	shm_free(nsq_worker_pipes);
 }
